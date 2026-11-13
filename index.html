@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#1e5128">
+  <meta name="description" content="FARMER ATI - Smart Agricultural Information System with Bluetooth LE Web Dashboard for ESP32 MicroPython">
+  <title>FARMER ATI – Smart Agricultural Information System</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Top Navigation Bar -->
+  <header class="app-header">
+    <div class="header-container">
+      <div class="brand">
+        <div class="brand-icon">
+          <!-- Agricultural Sprout SVG Icon -->
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M7 20h10" />
+            <path d="M10 20c0-5 3-7 4-10 1-3 0-5-2-7 0 2-2 4-2 7 0 2 1 4 0 10" />
+            <path d="M4 11c2-3 5-4 8-4" />
+          </svg>
+        </div>
+        <div class="brand-text">
+          <span class="brand-title">FARMER ATI</span>
+          <span class="brand-subtitle">Smart Agricultural Information System</span>
+        </div>
+      </div>
+
+      <!-- Quick BLE Status Pill & Button in Header -->
+      <div class="header-actions">
+        <div class="ble-pill disconnected" id="headerBlePill" title="Bluetooth Status">
+          <span class="status-dot"></span>
+          <span class="status-label" id="headerBleStatusText">Disconnected</span>
+        </div>
+        <button class="btn btn-connect-header" id="btnHeaderConnect" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="btn-icon">
+            <path d="m7 7 10 10-5 5V2l5 5L7 17" />
+          </svg>
+          <span id="btnHeaderConnectText">Connect to FARMER ATI</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <nav class="main-nav">
+      <ul class="nav-list" role="tablist">
+        <li class="nav-item">
+          <button class="nav-link active" data-tab="tab-overview" role="tab" aria-selected="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="nav-icon">
+              <rect width="7" height="9" x="3" y="3" rx="1" />
+              <rect width="7" height="5" x="14" y="3" rx="1" />
+              <rect width="7" height="9" x="14" y="12" rx="1" />
+              <rect width="7" height="5" x="3" y="16" rx="1" />
+            </svg>
+            <span>Overview</span>
+          </button>
+        </li>
+        <li class="nav-item">
+          <button class="nav-link" data-tab="tab-crops" role="tab" aria-selected="false">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="nav-icon">
+              <path d="M12 22v-9" />
+              <path d="M9 13a3 3 0 0 1 3-3c1.66 0 3 1.34 3 3" />
+              <path d="M12 10a5 5 0 0 1 5-5c2.76 0 5 2.24 5 5" />
+              <path d="M12 10A5 5 0 0 0 7 5C4.24 5 2 7.24 2 10" />
+            </svg>
+            <span>Crop Library</span>
+          </button>
+        </li>
+        <li class="nav-item">
+          <button class="nav-link" data-tab="tab-problems" role="tab" aria-selected="false">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="nav-icon">
+              <circle cx="12" cy="12" r="10" />
+              <path d="M12 16v-4" />
+              <path d="M12 8h.01" />
+            </svg>
+            <span>Farmer Problems</span>
+          </button>
+        </li>
+        <li class="nav-item">
+          <button class="nav-link" data-tab="tab-calculator" role="tab" aria-selected="false">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="nav-icon">
+              <rect width="16" height="20" x="4" y="2" rx="2" />
+              <line x1="8" x2="16" y1="6" y2="6" />
+              <line x1="16" x2="16" y1="14" y2="18" />
+              <path d="M16 10h.01" /><path d="M12 10h.01" /><path d="M8 10h.01" />
+              <path d="M12 14h.01" /><path d="M8 14h.01" /><path d="M12 18h.01" /><path d="M8 18h.01" />
+            </svg>
+            <span>Seed Rate Calculator</span>
+          </button>
+        </li>
+        <li class="nav-item">
+          <button class="nav-link" data-tab="tab-live" role="tab" aria-selected="false">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="nav-icon">
+              <rect width="20" height="14" x="2" y="5" rx="2" />
+              <path d="M6 15h12" />
+              <path d="M10 19v2" /><path d="M14 19v2" />
+            </svg>
+            <span>Live ESP32 Display</span>
+          </button>
+        </li>
+      </ul>
+    </nav>
+  </header>
+
+  <!-- Notification Banner for Web Bluetooth Compatibility Warning -->
+  <div class="browser-alert hidden" id="bluetoothSupportAlert">
+    <div class="alert-content">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="alert-icon">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="12" y1="8" x2="12" y2="12"/>
+        <line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      <div class="alert-text">
+        <strong>Web Bluetooth API Not Detected:</strong>
+        <span id="bluetoothSupportMessage">Please open this page in Google Chrome on your Android tablet or desktop over HTTPS. Make sure Bluetooth and Location are turned on.</span>
+      </div>
+      <button class="alert-close" id="btnDismissAlert" title="Dismiss">&times;</button>
+    </div>
+  </div>
+
+  <!-- Main Content Container -->
+  <main class="app-main">
+
+    <!-- ==================== TAB 1: OVERVIEW ==================== -->
+    <section class="tab-pane active" id="tab-overview" role="tabpanel">
+      <!-- Hero Welcome Card -->
+      <div class="hero-card">
+        <div class="hero-content">
+          <div class="hero-badge">ESP32 + MicroPython v1.28.0 + Web Bluetooth BLE</div>
+          <h1 class="hero-title">FARMER ATI Dashboard</h1>
+          <p class="hero-desc">
+            A wireless, offline-first smart agricultural advisor. Connects directly to the ESP32 field unit via Bluetooth Low Energy GATT without requiring local Wi-Fi or internet access. Access crop cultivation guides, pest remedies, and seed rate calculations in real time.
+          </p>
+          <div class="hero-actions">
+            <button class="btn btn-primary btn-lg" id="btnHeroConnect">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="btn-icon">
+                <path d="m7 7 10 10-5 5V2l5 5L7 17" />
+              </svg>
+              <span>Connect to FARMER ATI</span>
+            </button>
+            <button class="btn btn-outline btn-lg" id="btnJumpToLive">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon">
+                <rect width="20" height="14" x="2" y="5" rx="2" />
+                <path d="M6 15h12" />
+              </svg>
+              <span>Open Live ESP32 Screen</span>
+            </button>
+          </div>
+        </div>
+        <div class="hero-stats">
+          <div class="stat-card">
+            <span class="stat-number">10</span>
+            <span class="stat-label">Major Crops</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-number">10</span>
+            <span class="stat-label">Farmer Problems</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-number">0xA000</span>
+            <span class="stat-label">GATT Service</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-number">0xA001</span>
+            <span class="stat-label">Characteristic</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bluetooth Connection Management Card -->
+      <div class="card ble-card">
+        <div class="card-header">
+          <div class="card-header-left">
+            <h2 class="card-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="title-icon">
+                <path d="m7 7 10 10-5 5V2l5 5L7 17" />
+              </svg>
+              Bluetooth LE Communication Center
+            </h2>
+            <p class="card-subtitle">Connect directly to generic ESP32 running MicroPython BLE GATT server</p>
+          </div>
+          <div class="connection-status-tag" id="overviewStatusTag">
+            <span class="status-indicator-dot"></span>
+            <span id="overviewStatusText">Not Connected</span>
+          </div>
+        </div>
+
+        <div class="card-body">
+          <div class="ble-specs-row">
+            <div class="spec-pill">
+              <span class="spec-name">Device Name</span>
+              <span class="spec-val">FARMER ATI</span>
+            </div>
+            <div class="spec-pill">
+              <span class="spec-name">Service UUID</span>
+              <span class="spec-val code-font">0xA000</span>
+            </div>
+            <div class="spec-pill">
+              <span class="spec-name">Characteristic UUID</span>
+              <span class="spec-val code-font">0xA001 (READ / NOTIFY)</span>
+            </div>
+            <div class="spec-pill">
+              <span class="spec-name">Protocol</span>
+              <span class="spec-val">Web Bluetooth API</span>
+            </div>
+          </div>
+
+          <!-- Connection Controls -->
+          <div class="ble-controls-bar">
+            <button class="btn btn-primary" id="btnBleConnect">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon">
+                <path d="m7 7 10 10-5 5V2l5 5L7 17" />
+              </svg>
+              <span>Connect to FARMER ATI</span>
+            </button>
+            <button class="btn btn-danger" id="btnBleDisconnect" disabled>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+              </svg>
+              <span>Disconnect</span>
+            </button>
+            <button class="btn btn-secondary" id="btnBleReconnect" disabled>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon">
+                <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+              </svg>
+              <span>Reconnect</span>
+            </button>
+          </div>
+
+          <!-- Advanced Bluetooth Options -->
+          <div class="ble-filter-option">
+            <label class="checkbox-container">
+              <input type="checkbox" id="chkAcceptAllDevices">
+              <span class="checkmark"></span>
+              <span class="checkbox-label">Show all nearby Bluetooth devices (fallback mode if filtered scan does not show FARMER ATI)</span>
+            </label>
+          </div>
+
+          <!-- Live BLE Status & Message Box -->
+          <div class="live-message-container">
+            <div class="live-message-header">
+              <span class="live-message-label">Latest Incoming Notification:</span>
+              <span class="live-timestamp" id="liveMsgTimestamp">No data received yet</span>
+            </div>
+            <div class="live-message-box" id="overviewLatestMessageBox">
+              <span class="placeholder-text">Click "Connect to FARMER ATI" above to pair with your ESP32. Received notifications will appear here instantly.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hardware & System Specs Grid -->
+      <div class="grid-2col">
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="title-icon">
+                <rect width="18" height="18" x="3" y="3" rx="2" />
+                <path d="M9 3v18" /><path d="m14 9 3 3-3 3" />
+              </svg>
+              ESP32 Hardware Specifications
+            </h2>
+          </div>
+          <div class="card-body">
+            <ul class="spec-list">
+              <li>
+                <div class="spec-item-label">Microcontroller</div>
+                <div class="spec-item-value">Generic ESP32 Development Board</div>
+              </li>
+              <li>
+                <div class="spec-item-label">Firmware</div>
+                <div class="spec-item-value">MicroPython v1.28.0</div>
+              </li>
+              <li>
+                <div class="spec-item-label">OLED Display</div>
+                <div class="spec-item-value">SH1106 128x64 Monochrome (I2C 0x3C)</div>
+              </li>
+              <li>
+                <div class="spec-item-label">I2C Pinout</div>
+                <div class="spec-item-value">SDA: GPIO 21 | SCL: GPIO 22 (100,000 Hz)</div>
+              </li>
+              <li>
+                <div class="spec-item-label">Input Interface</div>
+                <div class="spec-item-value">4x4 Matrix Physical Keypad</div>
+              </li>
+              <li>
+                <div class="spec-item-label">Keypad Navigation</div>
+                <div class="spec-item-value">*: Home | C: Back | D: OK / Select</div>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="title-icon">
+                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+              </svg>
+              Tablet & System Features
+            </h2>
+          </div>
+          <div class="card-body">
+            <ul class="spec-list">
+              <li>
+                <div class="spec-item-label">Zero Wi-Fi Required</div>
+                <div class="spec-item-value">No router, hotspot, or local IP setup needed</div>
+              </li>
+              <li>
+                <div class="spec-item-label">Direct BLE GATT</div>
+                <div class="spec-item-value">Standard Bluetooth Low Energy notification streaming</div>
+              </li>
+              <li>
+                <div class="spec-item-label">Android Tablet Ready</div>
+                <div class="spec-item-value">Optimized for Google Chrome on touchscreens</div>
+              </li>
+              <li>
+                <div class="spec-item-label">Live OLED Mirroring</div>
+                <div class="spec-item-value">Simulates the ESP32 physical display in real-time</div>
+              </li>
+              <li>
+                <div class="spec-item-label">Future JSON Ready</div>
+                <div class="spec-item-value">Decodes plain text test strings & structured JSON</div>
+              </li>
+              <li>
+                <div class="spec-item-label">GitHub Pages HTTPS</div>
+                <div class="spec-item-value">Secure origin required by Web Bluetooth API</div>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 2: CROP LIBRARY ==================== -->
+    <section class="tab-pane" id="tab-crops" role="tabpanel">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">Crop Information Library</h2>
+          <p class="section-subtitle">Complete agricultural guide from FARMER ATI covering seasons, common pests, organic treatments, and neem spray schedules.</p>
+        </div>
+        <div class="search-and-filter">
+          <div class="search-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="search-icon">
+              <circle cx="11" cy="11" r="8"/>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <input type="text" id="cropSearchInput" placeholder="Search crops (e.g. Paddy, Tomato, Onion)...">
+          </div>
+        </div>
+      </div>
+
+      <!-- Category Filter Pills -->
+      <div class="filter-pills" id="cropFilterPills">
+        <button class="pill active" data-filter="all">All Crops (10)</button>
+        <button class="pill" data-filter="FIELD CROP">Field Crops</button>
+        <button class="pill" data-filter="PULSE">Pulses</button>
+        <button class="pill" data-filter="OILSEED">Oilseeds</button>
+        <button class="pill" data-filter="VEGETABLE">Vegetables</button>
+        <button class="pill" data-filter="FRUIT TREE">Fruit & Plantation Trees</button>
+      </div>
+
+      <!-- Crops Grid -->
+      <div class="crops-grid" id="cropsGridContainer">
+        <!-- Rendered dynamically by script.js -->
+      </div>
+    </section>
+
+    <!-- ==================== TAB 3: FARMER PROBLEMS ==================== -->
+    <section class="tab-pane" id="tab-problems" role="tabpanel">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">Common Farmer Problems & Diagnostic Solutions</h2>
+          <p class="section-subtitle">Field-tested organic interventions and problem diagnosis directly from the FARMER ATI system.</p>
+        </div>
+        <div class="search-box">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="search-icon">
+            <circle cx="11" cy="11" r="8"/>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <input type="text" id="problemSearchInput" placeholder="Search problems (e.g. Yellow Leaves, Pest Attack)...">
+        </div>
+      </div>
+
+      <!-- Problems Grid -->
+      <div class="problems-grid" id="problemsGridContainer">
+        <!-- Rendered dynamically by script.js -->
+      </div>
+    </section>
+
+    <!-- ==================== TAB 4: SEED RATE CALCULATOR ==================== -->
+    <section class="tab-pane" id="tab-calculator" role="tabpanel">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">Seed Rate & Farm Input Calculator</h2>
+          <p class="section-subtitle">Calculate seed requirements for field crops and input dosages for tree crops based on farm area or tree canopy.</p>
+        </div>
+      </div>
+
+      <!-- Calculator Type Selector -->
+      <div class="calculator-mode-selector">
+        <button class="calc-mode-btn active" id="btnModeField" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon">
+            <path d="M12 22v-9" /><path d="M9 13a3 3 0 0 1 3-3c1.66 0 3 1.34 3 3" />
+          </svg>
+          Field & Vegetable Crops (Area × Rate)
+        </button>
+        <button class="calc-mode-btn" id="btnModeTree" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon">
+            <circle cx="12" cy="12" r="10" />
+            <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" />
+          </svg>
+          Tree & Plantation Crops (Canopy / Tree Count × Rate)
+        </button>
+      </div>
+
+      <div class="grid-2col calculator-container">
+        <!-- Input Form Card -->
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title" id="calculatorFormTitle">Field Crop Calculation</h3>
+          </div>
+          <div class="card-body">
+            <form id="calculatorForm" onsubmit="return false;">
+              <!-- Field Crop Form Group -->
+              <div id="fieldFormGroup">
+                <div class="form-group">
+                  <label for="calcCropSelect" class="form-label">Select Crop</label>
+                  <select id="calcCropSelect" class="form-select">
+                    <option value="Paddy" data-rate="25" data-unit="kg/acre">Paddy (Rice) - Standard: 20-25 kg/acre</option>
+                    <option value="Groundnut" data-rate="45" data-unit="kg/acre">Groundnut - Standard: 40-50 kg/acre</option>
+                    <option value="Black Gram" data-rate="8" data-unit="kg/acre">Black Gram (Urad) - Standard: 8-10 kg/acre</option>
+                    <option value="Green Gram" data-rate="8" data-unit="kg/acre">Green Gram (Moong) - Standard: 8-10 kg/acre</option>
+                    <option value="Chilli" data-rate="0.25" data-unit="kg/acre">Chilli (Seedlings) - Standard: 200-250 g/acre</option>
+                    <option value="Tomato" data-rate="0.15" data-unit="kg/acre">Tomato (Seedlings) - Standard: 150-200 g/acre</option>
+                    <option value="Brinjal" data-rate="0.20" data-unit="kg/acre">Brinjal (Seedlings) - Standard: 150-200 g/acre</option>
+                    <option value="Onion" data-rate="4" data-unit="kg/acre">Onion (Seeds) - Standard: 4-5 kg/acre</option>
+                    <option value="Custom" data-rate="10" data-unit="kg/acre">Custom Field Crop</option>
+                  </select>
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="calcAreaInput" class="form-label">Cultivation Area</label>
+                    <input type="number" id="calcAreaInput" class="form-input" min="0.01" step="0.01" value="1.0" placeholder="e.g. 1.0">
+                  </div>
+                  <div class="form-group">
+                    <label for="calcAreaUnit" class="form-label">Area Unit</label>
+                    <select id="calcAreaUnit" class="form-select">
+                      <option value="1">Acres</option>
+                      <option value="2.471">Hectares</option>
+                      <option value="0.01">Cents / Gunthas (1/100 Acre)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="calcRateInput" class="form-label">Seed Rate per Acre (kg)</label>
+                    <input type="number" id="calcRateInput" class="form-input" min="0.001" step="0.01" value="25" placeholder="e.g. 25">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Tree Crop Form Group (Initially Hidden) -->
+              <div id="treeFormGroup" class="hidden">
+                <div class="form-group">
+                  <label for="calcTreeCropSelect" class="form-label">Select Tree Crop</label>
+                  <select id="calcTreeCropSelect" class="form-select">
+                    <option value="Mango" data-rate="5" data-unit="ml/L or g/tree">Mango (Perennial Fruit Tree)</option>
+                    <option value="Coconut" data-rate="10" data-unit="ml/L or g/tree">Coconut (Plantation Palm)</option>
+                    <option value="CustomTree" data-rate="5" data-unit="units/tree">Custom Orchard Tree</option>
+                  </select>
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="calcCanopyInput" class="form-label">Number of Trees / Canopy Factor</label>
+                    <input type="number" id="calcCanopyInput" class="form-input" min="1" step="1" value="50" placeholder="e.g. 50">
+                  </div>
+                  <div class="form-group">
+                    <label for="calcTreeRateInput" class="form-label">Application Rate per Tree</label>
+                    <input type="number" id="calcTreeRateInput" class="form-input" min="0.1" step="0.1" value="5" placeholder="e.g. 5 (ml or g)">
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-actions">
+                <button type="button" class="btn btn-primary btn-block" id="btnCalculate">
+                  Calculate Requirement
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <!-- Calculator Output & Guidance Card -->
+        <div class="card result-card">
+          <div class="card-header">
+            <h3 class="card-title">Calculation Summary</h3>
+          </div>
+          <div class="card-body">
+            <div class="calc-result-display">
+              <span class="calc-result-label" id="calcResultTitle">Total Seed Requirement:</span>
+              <div class="calc-result-value">
+                <span id="calcTotalValue">25.00</span>
+                <span class="calc-result-unit" id="calcTotalUnit">kg</span>
+              </div>
+              <p class="calc-result-formula" id="calcFormulaText">Calculation: 1.00 Acre × 25 kg/Acre = 25.00 kg</p>
+            </div>
+
+            <div class="agronomy-tips" id="agronomyTips">
+              <h4 class="tips-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="tips-icon">
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M12 16v-4" /><path d="M12 8h.01" />
+                </svg>
+                Agronomy Recommendation:
+              </h4>
+              <p id="calcTipText">For Paddy (Rice), maintain 20 cm × 15 cm spacing. Treat seeds with Trichoderma viride or Pseudomonas fluorescens before sowing to prevent fungal blast.</p>
+            </div>
+
+            <button class="btn btn-outline btn-block mt-3" id="btnCopyCalc" type="button">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon">
+                <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
+                <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
+              </svg>
+              <span>Copy Calculation</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 5: LIVE ESP32 DISPLAY ==================== -->
+    <section class="tab-pane" id="tab-live" role="tabpanel">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title">Live ESP32 OLED Display & BLE Stream</h2>
+          <p class="section-subtitle">Real-time mirror of the physical SH1106 128x64 OLED display and incoming Bluetooth LE GATT telemetry.</p>
+        </div>
+        <div class="display-theme-picker">
+          <span class="theme-label">OLED Theme:</span>
+          <button class="theme-btn active" data-theme="oled-white" title="Monochrome White">White</button>
+          <button class="theme-btn" data-theme="oled-amber" title="Amber Orange">Amber</button>
+          <button class="theme-btn" data-theme="oled-green" title="Emerald Green">Green</button>
+          <button class="theme-btn" data-theme="oled-cyan" title="Cyan Blue">Cyan</button>
+        </div>
+      </div>
+
+      <div class="grid-2col live-dashboard-grid">
+        <!-- Physical OLED Screen Hardware Simulator -->
+        <div class="card oled-card">
+          <div class="card-header">
+            <h3 class="card-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="title-icon">
+                <rect width="20" height="14" x="2" y="5" rx="2" />
+                <path d="M6 15h12" />
+              </svg>
+              Physical SH1106 OLED (128×64)
+            </h3>
+            <span class="oled-badge">I2C 0x3C | GPIO 21 & 22</span>
+          </div>
+          <div class="card-body oled-simulator-wrapper">
+            <div class="oled-bezel">
+              <div class="oled-screen oled-white" id="oledScreen">
+                <!-- OLED Header Bar -->
+                <div class="oled-header-bar">
+                  <span class="oled-title">FARMER ATI</span>
+                  <span class="oled-ble-icon" id="oledBleIcon">BLE</span>
+                </div>
+                <!-- OLED Display Lines (Simulating 8 rows of SH1106 128x64) -->
+                <div class="oled-content" id="oledContent">
+                  <div class="oled-line oled-heading" id="oledLine0">FARMER ATI</div>
+                  <div class="oled-line" id="oledLine1">BLE: READY</div>
+                  <div class="oled-line oled-highlight" id="oledLine2">WAITING FOR TABLET</div>
+                  <div class="oled-line" id="oledLine3">--------------------</div>
+                  <div class="oled-line" id="oledLine4">PRESS CONNECT ON WEB</div>
+                  <div class="oled-line" id="oledLine5">SERVICE: 0xA000</div>
+                  <div class="oled-line" id="oledLine6">CHAR:    0xA001</div>
+                </div>
+                <!-- OLED Controls Legend Footer -->
+                <div class="oled-footer-bar">
+                  <span>*:HOME</span>
+                  <span>C:BACK</span>
+                  <span>D:OK</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- OLED Status Description -->
+            <div class="oled-meta">
+              <span id="oledStatusText">Display Status: Waiting for BLE GATT connection</span>
+              <span id="oledUpdateCounter">Updates: 0</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Live BLE GATT Telemetry Monitor -->
+        <div class="card telemetry-card">
+          <div class="card-header">
+            <h3 class="card-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="title-icon">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+              </svg>
+              GATT Telemetry Stream
+            </h3>
+            <div class="telemetry-actions">
+              <button class="btn btn-sm btn-outline" id="btnTestNotify" title="Simulate incoming test notification packet">
+                Test Packet
+              </button>
+              <button class="btn btn-sm btn-secondary" id="btnClearLog">Clear Log</button>
+            </div>
+          </div>
+          <div class="card-body">
+            <!-- Telemetry Stats Strip -->
+            <div class="telemetry-metrics">
+              <div class="metric-box">
+                <span class="metric-label">Connection</span>
+                <span class="metric-value status-text-disconnected" id="metricConnection">Disconnected</span>
+              </div>
+              <div class="metric-box">
+                <span class="metric-label">Packets Recv</span>
+                <span class="metric-value" id="metricPackets">0</span>
+              </div>
+              <div class="metric-box">
+                <span class="metric-label">Bytes Recv</span>
+                <span class="metric-value" id="metricBytes">0 B</span>
+              </div>
+              <div class="metric-box">
+                <span class="metric-label">Decoder</span>
+                <span class="metric-value code-font">UTF-8</span>
+              </div>
+            </div>
+
+            <!-- Terminal Log Window -->
+            <div class="terminal-log" id="terminalLog">
+              <div class="log-entry log-system">
+                <span class="log-time">[System]</span>
+                <span class="log-msg">FARMER ATI Web Bluetooth Dashboard initialized.</span>
+              </div>
+              <div class="log-entry log-info">
+                <span class="log-time">[Ready]</span>
+                <span class="log-msg">Ready to scan for device 'FARMER ATI' (Service: 0xA000, Char: 0xA001).</span>
+              </div>
+            </div>
+
+            <!-- JSON Structure Parser Viewer (For future structured payloads) -->
+            <div class="json-inspector">
+              <div class="json-inspector-header">
+                <span>Payload Inspector (Text / Structured JSON):</span>
+                <span class="payload-type-badge" id="payloadTypeBadge">PLAIN TEXT</span>
+              </div>
+              <pre class="json-inspector-body" id="jsonInspectorBody">Awaiting incoming BLE GATT notifications...</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Crop Detail Modal -->
+  <div class="modal hidden" id="cropDetailModal" role="dialog" aria-modal="true">
+    <div class="modal-backdrop" id="modalBackdrop"></div>
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-header-info">
+          <span class="modal-badge" id="modalCropType">Crop Type</span>
+          <h3 class="modal-title" id="modalCropName">Crop Name</h3>
+          <span class="modal-season" id="modalCropSeason">Season Info</span>
+        </div>
+        <button class="modal-close-btn" id="btnModalClose">&times;</button>
+      </div>
+      <div class="modal-body" id="modalCropBody">
+        <!-- Rendered dynamically -->
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="btnModalDismiss">Close</button>
+        <button class="btn btn-primary" id="btnModalCalc">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon">
+            <rect width="16" height="20" x="4" y="2" rx="2" />
+          </svg>
+          <span>Calculate Seed Rate</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="app-footer">
+    <div class="footer-container">
+      <div class="footer-left">
+        <strong>FARMER ATI</strong> &mdash; Smart Agricultural Information System
+        <span class="footer-sub">ESP32 MicroPython v1.28.0 | Web Bluetooth BLE GATT | GitHub Pages</span>
+      </div>
+      <div class="footer-right">
+        <span>Hardware: SH1106 OLED (128x64) + 4x4 Keypad + BLE 0xA000</span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
