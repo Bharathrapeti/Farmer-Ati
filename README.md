@@ -1,87 +1,95 @@
 # FARMER ATI – Smart Agricultural Information System
-### Bluetooth LE Web Dashboard for ESP32 MicroPython
 
-A responsive, offline-first agricultural information dashboard hosted on **GitHub Pages** that connects directly to the **ESP32 FARMER ATI** field unit via **Bluetooth Low Energy (BLE)** using the **Web Bluetooth API**.
+A BLE-connected agricultural information dashboard for the **FARMER ATI** ESP32 project.
 
----
-
-## 🌾 Project Overview
-
-**FARMER ATI** is an embedded smart agricultural advisor designed for farmers and field demonstrations. The ESP32 device runs MicroPython with a physical 128×64 SH1106 OLED display and a 4×4 matrix keypad. 
-
-This web dashboard provides an interactive tablet companion interface that:
-- Connects directly to the ESP32 via **Bluetooth LE GATT** (zero local Wi-Fi, hotspot, or local IP required).
-- Displays live GATT notifications and mirrors the physical OLED screen in real-time.
-- Features a complete **Crop Library** for 10 major crops with organic care, prevention tips, and neem spray schedules.
-- Includes a **Farmer Problems Guide** for diagnostic checklists and natural remedies.
-- Features a **Seed Rate & Tree Dosage Calculator** supporting both field crops (Area × Rate) and tree crops (Canopy × Rate).
+> **School:** Kendriya Vidyalaya No.2 · **Event:** NCSC 2026–27
 
 ---
 
-## 🛠️ Hardware & Firmware Specifications
+## Live site
 
-| Component | Specification |
-|---|---|
-| **Microcontroller** | Generic ESP32 Development Board |
-| **Firmware** | MicroPython v1.28.0 |
-| **Display** | SH1106 OLED, 128×64 Monochrome |
-| **I2C Address** | `0x3C` |
-| **I2C Bus** | Bus 0: SDA = GPIO 21, SCL = GPIO 22 (100,000 Hz) |
-| **Input** | 4×4 Matrix Physical Keypad |
-| **Keypad Controls** | `*`: Home \| `C`: Back \| `D`: OK / Select |
+**[https://Bharathrapeti.github.io/Farmer-Ati/](https://Bharathrapeti.github.io/Farmer-Ati/)**
+
+Open in **Google Chrome on Android** or desktop Chrome (Bluetooth must be enabled).
 
 ---
 
-## 📡 Bluetooth LE GATT Configuration
+## How it works
 
-| Parameter | Value |
-|---|---|
-| **BLE Device Name** | `FARMER ATI` |
-| **Custom GATT Service UUID** | `0xA000` (`0000a000-0000-1000-8000-00805f9b34fb`) |
-| **Data Characteristic UUID** | `0xA001` (`0000a001-0000-1000-8000-00805f9b34fb`) |
-| **Characteristic Properties** | `READ`, `NOTIFY` |
-| **Initial Notification String** | `FARMER ATI Bluetooth connection successful!` |
+| Layer | Technology |
+|-------|-----------|
+| ESP32 firmware | MicroPython 1.28.0 |
+| Communication | Bluetooth Low Energy (BLE GATT) |
+| BLE service | `0xA000` |
+| BLE characteristic | `0xA001` (READ + NOTIFY) |
+| Dashboard | Web Bluetooth API (Chrome) |
+| Hosting | GitHub Pages (HTTPS) |
 
----
-
-## 📱 How to Open and Connect on Android Tablet (Google Chrome)
-
-### 1. Requirements
-- **Google Chrome** on your Android tablet (Chrome 79+ supports Web Bluetooth by default).
-- **Bluetooth** turned ON in Android settings.
-- **Location Services** turned ON in Android settings (required by Android OS for BLE scanning).
-- An active HTTPS connection (GitHub Pages provides automatic HTTPS).
-
-### 2. Connection Steps
-1. Power up your ESP32 running the MicroPython BLE server (`crop.py` test server or FARMER ATI BLE firmware).
-   - The ESP32 will start advertising with the name `FARMER ATI` and service `0xA000`.
-2. Open your GitHub Pages dashboard URL in **Google Chrome** on your Android tablet:
-   `https://<your-username>.github.io/<repo-name>/`
-3. Tap the **"Connect to FARMER ATI"** button in the top navigation bar or the Overview card.
-4. Android Chrome will display the native Bluetooth device chooser dialog:
-   - Select **`FARMER ATI`** from the list.
-   - Tap **Pair / Connect**.
-5. The dashboard will:
-   - Connect to the GATT server.
-   - Discover Primary Service `0xA000`.
-   - Discover Characteristic `0xA001`.
-   - Read the characteristic and start real-time notifications.
-6. The connection indicator will turn green (**CONNECTED**), and notifications such as `FARMER ATI Bluetooth connection successful!` will appear immediately in the **Live Notification Box** and on the **Live ESP32 OLED Display**!
+The ESP32 sends the **current OLED screen contents as JSON** via BLE notification every time the display changes.  
+The tablet receives the notification and renders the same information using **modern web fonts and a clean dashboard layout**.
 
 ---
 
-## 🖥️ Dashboard Navigation
+## Connecting from Android Chrome
 
-1. **Overview**: Project architecture, hardware pinout, live connection status card, and connection controls.
-2. **Crop Library**: 10 major crops (Paddy, Groundnut, Black Gram, Green Gram, Chilli, Tomato, Brinjal, Onion, Mango, Coconut) with seasons, pest tags, organic remedies, and neem spray dosages.
-3. **Farmer Problems**: 10 diagnostic advisory cards covering yellow leaves, pest attacks, leaf spots, waterlogging, fruit damage, soil fertility, and more.
-4. **Seed Rate Calculator**: Calculate seed requirements by selecting a crop, entering the acreage (Acres, Hectares, Cents), or entering canopy size for Mango and Coconut.
-5. **Live ESP32 Display**: Pixel-accurate 128×64 SH1106 OLED display simulator with themes (White, Amber, Green, Cyan) and live BLE telemetry packet viewer.
+1. Enable Bluetooth on the tablet.
+2. Open **[https://Bharathrapeti.github.io/Farmer-Ati/](https://Bharathrapeti.github.io/Farmer-Ati/)** in Chrome.
+3. Click **⚡ Connect to FARMER ATI**.
+4. Chrome shows a Bluetooth device picker — select **FARMER ATI**.
+5. The dashboard connects and the **📟 Live Display** tab starts mirroring the OLED.
 
 ---
 
-## 🔒 Preservation Confirmation
+## Dashboard tabs
 
-- The original working MicroPython project (`D:\documents\kids\in.py`) remains 100% untouched.
-- `main.py`, `sh1106.py`, OLED pin assignments (GPIO 21/22), 4×4 keypad mapping, crop data, and standby timer logic are preserved without modification.
-- The web dashboard runs completely independently and interfaces directly via the established BLE GATT protocol.
+| Tab | Contents |
+|-----|---------|
+| **Overview** | BLE status, stat cards, keypad guide |
+| **📟 Live Display** | Real-time OLED mirror via BLE |
+| **Crop Library** | Full 10-crop agronomy database |
+| **Farmer Problems** | 10 common problem guides |
+| **Seed Calculator** | Seed rate & tree canopy calculators |
+
+---
+
+## Files
+
+| File | Purpose |
+|------|---------|
+| `index.html` | Dashboard web application |
+| `style.css` | Agricultural green/white theme |
+| `script.js` | Web Bluetooth API + crop/problem data |
+| `README.md` | This file |
+
+---
+
+## ESP32 BLE JSON format
+
+```json
+{"s": "SCREEN TITLE", "l": ["line 1", "line 2", "..."]}
+```
+
+Packets > 20 bytes are fragmented:
+- First chunk: raw bytes
+- Middle chunks: prefixed with `<`
+- Last chunk: prefixed with `>` (triggers reassembly)
+
+---
+
+## Preserving the original project
+
+✅ Physical OLED display unchanged  
+✅ 4×4 keypad navigation unchanged  
+✅ All crop data, problem guides, calculators preserved  
+✅ Presentation/intro screens unchanged  
+✅ Standby timer unchanged  
+✅ `sh1106.py` not modified  
+✅ No Wi-Fi required for BLE mirroring  
+
+---
+
+## Hardware
+
+- **Board:** ESP32 development board
+- **Display:** SH1106 OLED 128×64, I²C 0x3C (SDA GPIO 21, SCL GPIO 22)
+- **Keypad:** 4×4 matrix (rows: 13,12,14,27 · cols: 26,25,33,32)
