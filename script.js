@@ -279,10 +279,38 @@ const debugStats = {
   jsonErrors: 0,
   lastError: 'None',
   lastCompletedMsgId: null,
-  lastSyncTime: '—'
+  lastSyncTime: '—',
+  lastHex: '—',
+  lastJson: '—'
 };
 
-function updateDebugUI() {
+function updateDebugUI(latestHex, latestIdx, latestTotal) {
+  const hexEl = $('debugHex');
+  if (hexEl && latestHex) hexEl.textContent = latestHex;
+
+  const progEl = $('debugProgress');
+  if (progEl) {
+    if (latestIdx !== undefined && latestTotal !== undefined) {
+      progEl.textContent = `Packet ${latestIdx + 1} of ${latestTotal} (Msg ID: ${debugStats.lastMsgId ?? '—'}, Total packets received: ${debugStats.packetsReceived})`;
+    } else {
+      progEl.textContent = `Packets received: ${debugStats.packetsReceived}, Messages completed: ${debugStats.messagesCompleted}`;
+    }
+  }
+
+  const jsonEl = $('debugJson');
+  if (jsonEl && debugStats.lastJson) jsonEl.textContent = debugStats.lastJson;
+
+  const statusEl = $('debugStatus');
+  if (statusEl) {
+    if (debugStats.lastError === 'None') {
+      statusEl.textContent = `OK — Message ${debugStats.lastCompletedMsgId ?? '—'} rendered at ${debugStats.lastSyncTime}`;
+      statusEl.className = 'debug-ok';
+    } else {
+      statusEl.textContent = `Error: ${debugStats.lastError} (Total errors: ${debugStats.jsonErrors})`;
+      statusEl.className = 'debug-error';
+    }
+  }
+
   const p = $('debugPackets');
   if (p) p.textContent = debugStats.packetsReceived;
 
@@ -293,7 +321,7 @@ function updateDebugUI() {
   if (d) d.textContent = debugStats.droppedIncomplete;
 
   const e = $('debugErrors');
-  if (e) e.textContent = debugStats.jsonErrors + (debugStats.lastError !== 'None' ? ` (${debugStats.lastError})` : '');
+  if (e) e.textContent = debugStats.jsonErrors;
 
   const s = $('debugLastSync');
   if (s) s.textContent = debugStats.lastSyncTime;
@@ -309,30 +337,44 @@ function handleNotification(event) {
   const bytes = new Uint8Array(value.buffer, value.byteOffset, value.byteLength);
   debugStats.packetsReceived++;
 
-  // 1. Verify Minimum Size and Magic Header [0xFA, 0x71]
-  if (bytes.length < HEADER_SIZE || bytes[0] !== MAGIC_0 || bytes[1] !== MAGIC_1) {
-    handleNonProtocolPacket(bytes);
-    updateDebugUI();
+  const hex = Array.from(bytes).map(b => b.toString(16).padStart(2, '0').toUpperCase()).join(' ');
+  debugStats.lastHex = hex;
+
+  // 1. Verify Minimum Size (5 header bytes + at least 1 byte data)
+  if (bytes.length < HEADER_SIZE + 1) {
+    debugStats.jsonErrors++;
+    debugStats.lastError = `Packet too small (${bytes.length} bytes): ${hex}`;
+    updateDebugUI(hex);
     return;
   }
 
-  // 2. Extract reliable packet identification
+  // 2. Verify Magic Header [0xFA, 0x72]
+  if (bytes[0] !== MAGIC_0 || bytes[1] !== MAGIC_1) {
+    // If an old 0xFA 0x71 framebuffer packet arrives from old buffer, ignore safely!
+    debugStats.jsonErrors++;
+    debugStats.lastError = `Ignored non-protocol packet: Header [${bytes[0].toString(16).toUpperCase()}, ${bytes[1].toString(16).toUpperCase()}]. Expected [FA, 72].`;
+    updateDebugUI(hex);
+    return;
+  }
+
+  // 3. Extract reliable packet identification
   const msgId = bytes[2];
   const pktIdx = bytes[3];
   const totalPkts = bytes[4];
   const chunkData = bytes.slice(HEADER_SIZE); // Raw binary slice — DO NOT decode as UTF-8 yet!
+  debugStats.lastMsgId = msgId;
 
   // Validate packet bounds
   if (totalPkts === 0 || pktIdx >= totalPkts) {
     debugStats.jsonErrors++;
-    debugStats.lastError = `Corrupt header: pkt ${pktIdx} of ${totalPkts}`;
-    updateDebugUI();
+    debugStats.lastError = `Corrupt header: pkt ${pktIdx} >= total ${totalPkts}`;
+    updateDebugUI(hex, pktIdx, totalPkts);
     return;
   }
 
   const now = Date.now();
 
-  // 3. Prune stale assemblers older than 2500ms
+  // 4. Prune stale assemblers older than 2500ms
   for (const [id, asm] of activeAssemblers.entries()) {
     if (now - asm.timestamp > 2500) {
       debugStats.droppedIncomplete++;
@@ -340,7 +382,7 @@ function handleNotification(event) {
     }
   }
 
-  // 4. Fetch or create assembler for this message
+  // 5. Fetch or create assembler for this message
   let asm = activeAssemblers.get(msgId);
   if (!asm) {
     asm = {
@@ -353,8 +395,9 @@ function handleNotification(event) {
 
   // Store binary fragment (idempotent: safely handles duplicate & out-of-order packets)
   asm.fragments.set(pktIdx, chunkData);
+  updateDebugUI(hex, pktIdx, totalPkts);
 
-  // 5. When all packets for this message have arrived, assemble
+  // 6. When all packets for this message have arrived, assemble
   if (asm.fragments.size === asm.totalPkts) {
     activeAssemblers.delete(msgId);
 
@@ -364,8 +407,8 @@ function handleNotification(event) {
       const fragment = asm.fragments.get(i);
       if (!fragment) {
         debugStats.droppedIncomplete++;
-        debugStats.lastError = `Missing slice index ${i}`;
-        updateDebugUI();
+        debugStats.lastError = `Missing slice index ${i} in msg ${msgId}`;
+        updateDebugUI(hex, pktIdx, totalPkts);
         return;
       }
       totalLength += fragment.length;
@@ -380,62 +423,46 @@ function handleNotification(event) {
       offset += fragment.length;
     }
 
-    // 6. Decode the complete reassembled message as UTF-8
+    // 7. Decode the complete reassembled message as UTF-8
     let jsonString = '';
     try {
-      jsonString = new TextDecoder('utf-8').decode(completeBytes);
+      jsonString = new TextDecoder('utf-8', { fatal: true }).decode(completeBytes);
     } catch (decodeErr) {
       debugStats.jsonErrors++;
       debugStats.lastError = 'UTF-8 decode failed: ' + decodeErr.message;
-      updateDebugUI();
+      updateDebugUI(hex, pktIdx, totalPkts);
       return;
     }
 
-    // 7. Parse JSON
+    // 8. Parse JSON
     let parsed;
     try {
       parsed = JSON.parse(jsonString);
     } catch (parseErr) {
       debugStats.jsonErrors++;
       debugStats.lastError = 'JSON parse error: ' + parseErr.message;
-      updateDebugUI();
+      updateDebugUI(hex, pktIdx, totalPkts);
       return;
     }
 
-    // 8. Verify schema structure: { s: string, l: array }
+    // 9. Verify schema structure: { s: string, l: array }
     if (!parsed || typeof parsed !== 'object' || typeof parsed.s !== 'string' || !Array.isArray(parsed.l)) {
       debugStats.jsonErrors++;
-      debugStats.lastError = 'Invalid schema: expected {s:string, l:array}';
-      updateDebugUI();
+      debugStats.lastError = 'Invalid schema: expected {s:string, l:string[]}';
+      updateDebugUI(hex, pktIdx, totalPkts);
       return;
     }
 
-    // 9. Schema verified! Render to modern UI
+    // 10. Schema verified! Render to modern UI
     debugStats.messagesCompleted++;
     debugStats.lastCompletedMsgId = msgId;
     debugStats.lastSyncTime = new Date().toLocaleTimeString();
+    debugStats.lastJson = jsonString;
     debugStats.lastError = 'None';
 
     renderLiveScreen(parsed);
-    updateDebugUI();
+    updateDebugUI(hex, pktIdx, totalPkts);
     setStatus('connected');
-  } else {
-    updateDebugUI();
-  }
-}
-
-function handleNonProtocolPacket(bytes) {
-  // Gracefully handle any plain text announcement (e.g. "FARMER ATI ready")
-  try {
-    const text = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
-    if (text.startsWith('FARMER ATI')) {
-      console.log('BLE device announcement:', text);
-      const msg = $('connectionMessage');
-      if (msg) msg.textContent = text;
-      setStatus('connected');
-    }
-  } catch (_) {
-    // Non-protocol binary data ignored without corrupting display
   }
 }
 
@@ -497,13 +524,7 @@ async function connectBLE() {
     await bleCharacteristic.startNotifications();
     bleCharacteristic.addEventListener('characteristicvaluechanged', handleNotification);
 
-    // Read the current value immediately
-    try {
-      const val = await bleCharacteristic.readValue();
-      handleNotification({ target: { value: val } });
-    } catch (_) { /* read might fail if no value yet */ }
-
-    setStatus('connected', 'Connected to FARMER ATI ESP32 via Bluetooth.');
+    setStatus('connected', 'Connected to FARMER ATI. Waiting for live screen...');
     $('connectButton').style.display = 'none';
     $('disconnectButton').style.display = 'inline-flex';
 

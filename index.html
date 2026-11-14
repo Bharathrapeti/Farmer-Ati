@@ -140,6 +140,28 @@
         <div class="live-empty">Connect to ESP32 to see the live OLED screen here.</div>
       </div>
 
+      <div class="card debug-card" style="margin-top: 14px;">
+        <h3 style="margin: 0 0 10px; font-size: 14px; color: var(--green-dark);">BLE Packet Diagnostics</h3>
+        <div class="debug-grid">
+          <div class="debug-item">
+            <span class="debug-label">Last Received Packet (Hex):</span>
+            <code id="debugHex" class="debug-code">—</code>
+          </div>
+          <div class="debug-item">
+            <span class="debug-label">Packet Progress:</span>
+            <span id="debugProgress" style="font-weight: 600;">Waiting for data...</span>
+          </div>
+          <div class="debug-item">
+            <span class="debug-label">Reconstructed JSON:</span>
+            <pre id="debugJson" class="debug-pre">—</pre>
+          </div>
+          <div class="debug-item">
+            <span class="debug-label">Parser Status / Errors:</span>
+            <span id="debugStatus" class="debug-ok">None</span>
+          </div>
+        </div>
+      </div>
+
       <div class="live-hint">
         📟 This panel mirrors exactly what is displayed on the ESP32 OLED. Use the physical keypad to navigate.
       </div>
