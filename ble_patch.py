@@ -7,7 +7,7 @@
 #
 # Binary Packet Protocol (<= 20 bytes total per BLE notification):
 #   [0]: 0xFA  (Magic 1)
-#   [1]: 0x71  (Magic 2)
+#   [1]: 0x72  (Magic 2: text-based JSON protocol)
 #   [2]: msg_id (0..255)
 #   [3]: pkt_idx (0..total_pkts-1)
 #   [4]: total_pkts (1..255)

@@ -68,7 +68,7 @@ The tablet receives the notification and renders the same information using **mo
 Each notification contains up to 20 bytes (safe for standard 23-byte BLE ATT MTU):
 
 - `[0]`: `0xFA` (Magic byte 1)
-- `[1]`: `0x71` (Magic byte 2)
+- `[1]`: `0x72` (Magic byte 2: text-based JSON protocol)
 - `[2]`: `msg_id` (0..255 wrapping message counter)
 - `[3]`: `pkt_idx` (0..total_pkts - 1)
 - `[4]`: `total_pkts` (1..255)

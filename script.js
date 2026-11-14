@@ -257,7 +257,7 @@ function renderLiveScreen(data) {
 //
 // Header (5 bytes):
 //   [0]: 0xFA (magic 1)
-//   [1]: 0x71 (magic 2)
+//   [1]: 0x72 (magic 2: text-based JSON protocol)
 //   [2]: msgId (0..255)
 //   [3]: pktIdx (0..totalPkts-1)
 //   [4]: totalPkts (1..255)
@@ -265,7 +265,7 @@ function renderLiveScreen(data) {
 // ============================================================
 
 const MAGIC_0 = 0xFA;
-const MAGIC_1 = 0x71;
+const MAGIC_1 = 0x72; // Protocol identifier for text-based JSON mirror
 const HEADER_SIZE = 5;
 
 // Active message assemblers: msgId -> { totalPkts, fragments: Map(pktIdx -> Uint8Array), timestamp }
