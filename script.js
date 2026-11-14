@@ -7,25 +7,26 @@
 // ESP32 characteristic:     0xA001  (READ | NOTIFY)
 // Device name:              FARMER ATI
 //
-// JSON format received from ESP32:
-//   {"s":"SCREEN TITLE","l":["line 1","line 2",...]}
+// Reliable Framed Binary Protocol (Max 20 bytes per BLE packet):
+//   [0]: 0xFA  (Magic byte 1)
+//   [1]: 0x71  (Magic byte 2)
+//   [2]: msgId (0..255)
+//   [3]: pktIdx (0..totalPkts-1)
+//   [4]: totalPkts (1..255)
+//   [5..N]: payload bytes (reassembled first, then decoded as UTF-8)
 //
-// Multi-chunk protocol:
-//   First chunk  = raw bytes (no prefix)
-//   Middle chunk = '<' prefix
-//   Last chunk   = '>' prefix  → triggers JSON reassembly
+// JSON format once assembled:
+//   {"s":"SCREEN TITLE","l":["line 1","line 2",...]}
 // ============================================================
 
-const BLE_DEVICE_NAME       = 'FARMER ATI';
-const BLE_SERVICE_UUID      = 0xA000;
+const BLE_DEVICE_NAME         = 'FARMER ATI';
+const BLE_SERVICE_UUID        = 0xA000;
 const BLE_CHARACTERISTIC_UUID = 0xA001;
 
 // ── State ────────────────────────────────────────────────────
 let bleDevice         = null;
 let bleServer         = null;
 let bleCharacteristic = null;
-let chunkBuffer       = '';   // accumulated multi-chunk string
-let lastScreen        = {};   // last parsed {s, l}
 let frameCount        = 0;
 
 // ── DOM helpers ───────────────────────────────────────────────
@@ -252,62 +253,190 @@ function renderLiveScreen(data) {
 }
 
 // ============================================================
-// BLE CHUNK REASSEMBLY
+// RELIABLE BINARY PACKET PROTOCOL & REASSEMBLY
+//
+// Header (5 bytes):
+//   [0]: 0xFA (magic 1)
+//   [1]: 0x71 (magic 2)
+//   [2]: msgId (0..255)
+//   [3]: pktIdx (0..totalPkts-1)
+//   [4]: totalPkts (1..255)
+//   [5..N]: payload data bytes (never decoded as UTF-8 until reassembled)
 // ============================================================
 
-const decoder = new TextDecoder('utf-8');
+const MAGIC_0 = 0xFA;
+const MAGIC_1 = 0x71;
+const HEADER_SIZE = 5;
+
+// Active message assemblers: msgId -> { totalPkts, fragments: Map(pktIdx -> Uint8Array), timestamp }
+const activeAssemblers = new Map();
+
+// Diagnostics / Debug tracking
+const debugStats = {
+  packetsReceived: 0,
+  messagesCompleted: 0,
+  droppedIncomplete: 0,
+  jsonErrors: 0,
+  lastError: 'None',
+  lastCompletedMsgId: null,
+  lastSyncTime: '—'
+};
+
+function updateDebugUI() {
+  const p = $('debugPackets');
+  if (p) p.textContent = debugStats.packetsReceived;
+
+  const m = $('debugMessages');
+  if (m) m.textContent = debugStats.messagesCompleted;
+
+  const d = $('debugDropped');
+  if (d) d.textContent = debugStats.droppedIncomplete;
+
+  const e = $('debugErrors');
+  if (e) e.textContent = debugStats.jsonErrors + (debugStats.lastError !== 'None' ? ` (${debugStats.lastError})` : '');
+
+  const s = $('debugLastSync');
+  if (s) s.textContent = debugStats.lastSyncTime;
+
+  const fc = $('frameCount');
+  if (fc) fc.textContent = debugStats.messagesCompleted;
+}
 
 function handleNotification(event) {
-  const bytes = new Uint8Array(event.target.value.buffer);
-  if (!bytes.length) return;
+  const value = event.target.value;
+  if (!value || value.byteLength === 0) return;
 
-  // Check prefix byte
-  const first = bytes[0];
+  const bytes = new Uint8Array(value.buffer, value.byteOffset, value.byteLength);
+  debugStats.packetsReceived++;
 
-  if (first === 0x3C) {
-    // '<' = middle chunk — append (skip prefix byte)
-    chunkBuffer += decoder.decode(bytes.slice(1));
-  } else if (first === 0x3E) {
-    // '>' = last chunk — append + process
-    chunkBuffer += decoder.decode(bytes.slice(1));
-    processJsonBuffer(chunkBuffer);
-    chunkBuffer = '';
-  } else {
-    // Single-packet or first chunk of multi-packet
-    const text = decoder.decode(bytes);
-    if (text.startsWith('{')) {
-      // Might be complete or start of multi-packet
-      chunkBuffer = text;
-      // If it's already a complete JSON object, parse it
-      if (isCompleteJson(text)) {
-        processJsonBuffer(text);
-        chunkBuffer = '';
-      }
-    } else {
-      // Fallback: treat as plain text message
-      showRawMessage(text);
+  // 1. Verify Minimum Size and Magic Header [0xFA, 0x71]
+  if (bytes.length < HEADER_SIZE || bytes[0] !== MAGIC_0 || bytes[1] !== MAGIC_1) {
+    handleNonProtocolPacket(bytes);
+    updateDebugUI();
+    return;
+  }
+
+  // 2. Extract reliable packet identification
+  const msgId = bytes[2];
+  const pktIdx = bytes[3];
+  const totalPkts = bytes[4];
+  const chunkData = bytes.slice(HEADER_SIZE); // Raw binary slice — DO NOT decode as UTF-8 yet!
+
+  // Validate packet bounds
+  if (totalPkts === 0 || pktIdx >= totalPkts) {
+    debugStats.jsonErrors++;
+    debugStats.lastError = `Corrupt header: pkt ${pktIdx} of ${totalPkts}`;
+    updateDebugUI();
+    return;
+  }
+
+  const now = Date.now();
+
+  // 3. Prune stale assemblers older than 2500ms
+  for (const [id, asm] of activeAssemblers.entries()) {
+    if (now - asm.timestamp > 2500) {
+      debugStats.droppedIncomplete++;
+      activeAssemblers.delete(id);
     }
   }
-}
 
-function isCompleteJson(str) {
-  try { JSON.parse(str); return true; } catch (_) { return false; }
-}
+  // 4. Fetch or create assembler for this message
+  let asm = activeAssemblers.get(msgId);
+  if (!asm) {
+    asm = {
+      totalPkts: totalPkts,
+      fragments: new Map(),
+      timestamp: now
+    };
+    activeAssemblers.set(msgId, asm);
+  }
 
-function processJsonBuffer(str) {
-  try {
-    const data = JSON.parse(str);
-    renderLiveScreen(data);
+  // Store binary fragment (idempotent: safely handles duplicate & out-of-order packets)
+  asm.fragments.set(pktIdx, chunkData);
+
+  // 5. When all packets for this message have arrived, assemble
+  if (asm.fragments.size === asm.totalPkts) {
+    activeAssemblers.delete(msgId);
+
+    // Calculate total buffer length
+    let totalLength = 0;
+    for (let i = 0; i < asm.totalPkts; i++) {
+      const fragment = asm.fragments.get(i);
+      if (!fragment) {
+        debugStats.droppedIncomplete++;
+        debugStats.lastError = `Missing slice index ${i}`;
+        updateDebugUI();
+        return;
+      }
+      totalLength += fragment.length;
+    }
+
+    // Allocate single contiguous byte buffer
+    const completeBytes = new Uint8Array(totalLength);
+    let offset = 0;
+    for (let i = 0; i < asm.totalPkts; i++) {
+      const fragment = asm.fragments.get(i);
+      completeBytes.set(fragment, offset);
+      offset += fragment.length;
+    }
+
+    // 6. Decode the complete reassembled message as UTF-8
+    let jsonString = '';
+    try {
+      jsonString = new TextDecoder('utf-8').decode(completeBytes);
+    } catch (decodeErr) {
+      debugStats.jsonErrors++;
+      debugStats.lastError = 'UTF-8 decode failed: ' + decodeErr.message;
+      updateDebugUI();
+      return;
+    }
+
+    // 7. Parse JSON
+    let parsed;
+    try {
+      parsed = JSON.parse(jsonString);
+    } catch (parseErr) {
+      debugStats.jsonErrors++;
+      debugStats.lastError = 'JSON parse error: ' + parseErr.message;
+      updateDebugUI();
+      return;
+    }
+
+    // 8. Verify schema structure: { s: string, l: array }
+    if (!parsed || typeof parsed !== 'object' || typeof parsed.s !== 'string' || !Array.isArray(parsed.l)) {
+      debugStats.jsonErrors++;
+      debugStats.lastError = 'Invalid schema: expected {s:string, l:array}';
+      updateDebugUI();
+      return;
+    }
+
+    // 9. Schema verified! Render to modern UI
+    debugStats.messagesCompleted++;
+    debugStats.lastCompletedMsgId = msgId;
+    debugStats.lastSyncTime = new Date().toLocaleTimeString();
+    debugStats.lastError = 'None';
+
+    renderLiveScreen(parsed);
+    updateDebugUI();
     setStatus('connected');
-  } catch (e) {
-    console.warn('BLE JSON parse error:', e, '|', str.substring(0, 80));
+  } else {
+    updateDebugUI();
   }
 }
 
-function showRawMessage(text) {
-  /* Fallback: display as a plain message (e.g. the initial test string) */
-  renderLiveScreen({ s: 'FARMER ATI', l: [text] });
-  setStatus('connected');
+function handleNonProtocolPacket(bytes) {
+  // Gracefully handle any plain text announcement (e.g. "FARMER ATI ready")
+  try {
+    const text = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+    if (text.startsWith('FARMER ATI')) {
+      console.log('BLE device announcement:', text);
+      const msg = $('connectionMessage');
+      if (msg) msg.textContent = text;
+      setStatus('connected');
+    }
+  } catch (_) {
+    // Non-protocol binary data ignored without corrupting display
+  }
 }
 
 // ============================================================
@@ -399,7 +528,7 @@ async function disconnectBLE() {
   bleDevice = null;
   bleServer = null;
   bleCharacteristic = null;
-  chunkBuffer = '';
+  activeAssemblers.clear();
 
   setStatus('idle', 'Disconnected. Click Connect to reconnect.');
   $('connectButton').disabled = false;

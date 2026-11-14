@@ -63,16 +63,21 @@ The tablet receives the notification and renders the same information using **mo
 
 ---
 
-## ESP32 BLE JSON format
+## ESP32 BLE Packet Protocol
 
+Each notification contains up to 20 bytes (safe for standard 23-byte BLE ATT MTU):
+
+- `[0]`: `0xFA` (Magic byte 1)
+- `[1]`: `0x71` (Magic byte 2)
+- `[2]`: `msg_id` (0..255 wrapping message counter)
+- `[3]`: `pkt_idx` (0..total_pkts - 1)
+- `[4]`: `total_pkts` (1..255)
+- `[5..N]`: Payload slice (up to 15 bytes of UTF-8 JSON data)
+
+Reassembled JSON format:
 ```json
 {"s": "SCREEN TITLE", "l": ["line 1", "line 2", "..."]}
 ```
-
-Packets > 20 bytes are fragmented:
-- First chunk: raw bytes
-- Middle chunks: prefixed with `<`
-- Last chunk: prefixed with `>` (triggers reassembly)
 
 ---
 
