@@ -3,24 +3,24 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#173b2b">
+<meta name="theme-color" content="#0d2818">
 <title>FARMER ATI – Smart Agricultural Information System</title>
 <link rel="stylesheet" href="style.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 </head>
 <body>
 
 <!-- ══════════════════════════════════════════════
-     HEADER
+     TOP NAVIGATION BAR & BRANDING
 ═══════════════════════════════════════════════ -->
 <header class="site-header">
   <div class="header-brand">
-    <div class="header-logo">🌿</div>
+    <div class="header-logo" aria-hidden="true">🌿</div>
     <div class="header-titles">
       <h1>FARMER ATI</h1>
-      <div class="header-subtitle">Smart Agricultural Information System</div>
+      <div class="header-subtitle">Smart Agricultural &amp; Hydroponic Information System</div>
     </div>
   </div>
 
@@ -31,7 +31,7 @@
 </header>
 
 <!-- ══════════════════════════════════════════════
-     TAB BAR
+     TAB SELECTION BAR
 ═══════════════════════════════════════════════ -->
 <nav class="tab-bar">
   <button class="tab-button active" data-tab="tab-overview">Overview</button>
@@ -48,12 +48,12 @@
 ═══════════════════════════════════════════════ -->
 <section class="tab-page active" id="tab-overview">
 
-  <!-- BLE Connect Panel -->
+  <!-- Bluetooth Connection Card -->
   <div class="card connect-card">
     <div class="connect-left">
       <div class="connect-title">Bluetooth Connection</div>
       <div class="connect-message" id="connectionMessage">
-        Click <strong>Connect to FARMER ATI</strong> to link your ESP32 via Bluetooth.
+        Click <strong>Connect to FARMER ATI</strong> to link your Android tablet via Bluetooth Low Energy.
       </div>
     </div>
     <div class="connect-buttons">
@@ -66,7 +66,7 @@
     </div>
   </div>
 
-  <!-- Stat cards -->
+  <!-- Realtime Stat Cards -->
   <div class="stat-grid">
     <div class="stat-card">
       <div class="stat-label">BLE Status</div>
@@ -81,37 +81,37 @@
       <div class="stat-value" id="statScreen">—</div>
     </div>
     <div class="stat-card">
-      <div class="stat-label">Frames received</div>
+      <div class="stat-label">Frames Received</div>
       <div class="stat-value" id="frameCount">0</div>
     </div>
   </div>
 
-  <!-- Two-column info grid -->
+  <!-- Keypad & Project Info Grid -->
   <div class="info-grid">
     <div class="card">
-      <h2>Keypad Guide</h2>
-      <p class="muted">Use the physical ESP32 keypad to navigate. The tablet is display-only.</p>
+      <h2>Keypad Navigation Guide</h2>
+      <p class="muted">Navigate using the ESP32 physical 4×4 keypad. The Android tablet functions as an ultra-clear, display-only dashboard.</p>
       <div class="key-grid">
-        <div class="key-item"><div class="key-badge">A</div><div>Previous item</div></div>
-        <div class="key-item"><div class="key-badge">B</div><div>Next item</div></div>
+        <div class="key-item"><div class="key-badge">A</div><div>Previous item / Up</div></div>
+        <div class="key-item"><div class="key-badge">B</div><div>Next item / Down</div></div>
         <div class="key-item"><div class="key-badge">C</div><div>Select / Confirm</div></div>
-        <div class="key-item"><div class="key-badge">#</div><div>Confirm</div></div>
-        <div class="key-item"><div class="key-badge">D</div><div>Go back</div></div>
-        <div class="key-item"><div class="key-badge">*</div><div>Return home</div></div>
-        <div class="key-item"><div class="key-badge">0–9</div><div>Number input</div></div>
-        <div class="key-item"><div class="key-badge">* (num)</div><div>Decimal point</div></div>
+        <div class="key-item"><div class="key-badge">#</div><div>Confirm selection</div></div>
+        <div class="key-item"><div class="key-badge">D</div><div>Go back / Previous menu</div></div>
+        <div class="key-item"><div class="key-badge">*</div><div>Return to Home screen</div></div>
+        <div class="key-item"><div class="key-badge">0–9</div><div>Numeric data input</div></div>
+        <div class="key-item"><div class="key-badge">* (num)</div><div>Decimal point entry</div></div>
       </div>
     </div>
 
     <div class="card">
       <h2>About FARMER ATI</h2>
-      <p>A Smart Agricultural &amp; Hydroponic Information System built on an ESP32 microcontroller with a 128×64 OLED display.</p>
+      <p>A Smart Agricultural &amp; Hydroponic Information System built on an ESP32 microcontroller with an SH1106 128×64 OLED display.</p>
       <ul class="about-list">
-        <li>📡 Bluetooth Low Energy (BLE) live mirroring</li>
-        <li>🌿 10-crop agronomy database</li>
-        <li>🐛 10 common farmer problem guides</li>
-        <li>🧮 Seed rate &amp; tree calculators</li>
-        <li>📅 Month-based crop calendar</li>
+        <li>📡 Bluetooth Low Energy (BLE) real-time mirroring</li>
+        <li>🌿 Complete 10-crop agronomy database</li>
+        <li>🐛 10 practical farmer problem guides</li>
+        <li>🧮 Seed rate &amp; tree spacing calculators</li>
+        <li>📅 12-month crop sowing and harvesting calendar</li>
         <li>🏫 Kendriya Vidyalaya No.2 · NCSC 2026–27</li>
       </ul>
     </div>
@@ -120,88 +120,139 @@
 </section>
 
 <!-- ══════════════════════════════════════════════
-     TAB 2 — LIVE DISPLAY
+     TAB 2 — LIVE DISPLAY (8:10 KIOSK REDESIGN)
 ═══════════════════════════════════════════════ -->
 <section class="tab-page" id="tab-live">
 
-  <div class="live-layout">
+  <!-- Main Kiosk Presentation Centerpiece -->
+  <div class="kiosk-stage">
 
-    <!-- Live screen panel -->
-    <div class="card live-card">
-      <div class="live-card-header">
-        <div>
-          <h2 id="liveScreenTitle">FARMER ATI</h2>
-          <div class="muted">Live OLED mirror — updates automatically via BLE</div>
+    <!-- 8:10 Portrait Tablet Kiosk Container -->
+    <div class="kiosk-frame" role="region" aria-label="FARMER ATI Live Display Kiosk">
+
+      <!-- Kiosk Crown Header -->
+      <div class="kiosk-crown">
+        <div class="kiosk-brand">
+          <span class="kiosk-brand-icon">🌿</span>
+          <div class="kiosk-brand-text">
+            <span class="kiosk-brand-title">FARMER ATI</span>
+            <span class="kiosk-brand-tag">AGRICULTURAL KIOSK</span>
+          </div>
         </div>
-        <div class="live-timestamp">Last update: <span id="liveScreenTime">—</span></div>
+        <div class="kiosk-live-badge">
+          <span class="live-pulse-dot" aria-hidden="true"></span>
+          <span>LIVE MIRROR</span>
+        </div>
       </div>
 
-      <div class="live-screen-frame" id="liveLines">
-        <div class="live-empty">Connect to ESP32 to see the live OLED screen here.</div>
+      <!-- Kiosk Subheader with Screen Title & Sync Timestamp -->
+      <div class="kiosk-meta-bar">
+        <div class="kiosk-title-group">
+          <span class="kiosk-label-small">CURRENT SCREEN</span>
+          <h2 class="kiosk-screen-heading" id="liveScreenTitle">FARMER ATI</h2>
+        </div>
+        <div class="kiosk-sync-group">
+          <span class="kiosk-label-small">LAST SYNC</span>
+          <span class="kiosk-timestamp" id="liveScreenTime">—</span>
+        </div>
       </div>
 
-      <div class="card debug-card" style="margin-top: 14px;">
-        <h3 style="margin: 0 0 10px; font-size: 14px; color: var(--green-dark);">BLE Packet Diagnostics</h3>
-        <div class="debug-grid">
-          <div class="debug-item">
-            <span class="debug-label">Last Received Packet (Hex):</span>
+      <!-- Kiosk Display Canvas (Mirrors ESP32 OLED in Modern Web Typography) -->
+      <div class="kiosk-screen-viewport">
+        <div class="live-screen-frame" id="liveLines">
+          <div class="live-empty">
+            <div class="live-empty-icon">📟</div>
+            <div class="live-empty-title">Waiting for ESP32 Screen</div>
+            <div class="live-empty-subtitle">Connect to FARMER ATI via Bluetooth to view live information.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Kiosk Baseboard Footer -->
+      <div class="kiosk-baseboard">
+        <div class="kiosk-base-hint">
+          <span class="kiosk-keypad-icon">⌨</span> Physical 4×4 Keypad Controlled &bull; Tablet Display Only
+        </div>
+        <div class="kiosk-spec-chip">ESP32 &bull; SH1106</div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- Collapsible BLE Stream Diagnostics & Technical Information -->
+  <div class="diagnostics-wrapper">
+    <details class="diagnostics-drawer">
+      <summary class="diagnostics-summary">
+        <div class="diag-summary-left">
+          <span class="diag-icon">🛠️</span>
+          <span class="diag-title">BLE Packet Diagnostics &amp; Stream Inspector</span>
+        </div>
+        <div class="diag-summary-right">
+          <span class="diag-pill">Packets: <strong id="debugPackets">0</strong></span>
+          <span class="diag-pill">Completed: <strong id="debugMessages">0</strong></span>
+          <span class="diag-pill diag-pill-warn">Dropped: <strong id="debugDropped">0</strong></span>
+          <span class="diag-pill diag-pill-err">Errors: <strong id="debugErrors">0</strong></span>
+          <span class="diag-toggle-arrow" aria-hidden="true">▾</span>
+        </div>
+      </summary>
+
+      <div class="diagnostics-panel">
+
+        <div class="diagnostics-grid">
+          <!-- Raw Packet Hex -->
+          <div class="diag-card">
+            <div class="diag-card-title">Last Received Packet (Hex)</div>
             <code id="debugHex" class="debug-code">—</code>
           </div>
-          <div class="debug-item">
-            <span class="debug-label">Packet Progress:</span>
-            <span id="debugProgress" style="font-weight: 600;">Waiting for data...</span>
+
+          <!-- Progress and Status -->
+          <div class="diag-card">
+            <div class="diag-card-title">Assembly Progress &amp; Parser Status</div>
+            <div class="diag-status-row">
+              <span class="diag-sublabel">Progress:</span>
+              <span id="debugProgress" class="debug-progress-text">Waiting for data...</span>
+            </div>
+            <div class="diag-status-row">
+              <span class="diag-sublabel">Status:</span>
+              <span id="debugStatus" class="debug-ok">None</span>
+            </div>
           </div>
-          <div class="debug-item">
-            <span class="debug-label">Reconstructed JSON:</span>
+
+          <!-- Reconstructed JSON Payload -->
+          <div class="diag-card diag-card-full">
+            <div class="diag-card-title">Reconstructed JSON Message</div>
             <pre id="debugJson" class="debug-pre">—</pre>
           </div>
-          <div class="debug-item">
-            <span class="debug-label">Parser Status / Errors:</span>
-            <span id="debugStatus" class="debug-ok">None</span>
+        </div>
+
+        <!-- Connection and Hardware Quick Reference -->
+        <div class="diag-footer-grid">
+          <div class="diag-mini-card">
+            <div class="sidebar-status">
+              <span class="status-dot dot-idle" id="connectionDot2"></span>
+              <span id="connectionStatus2">Not connected</span>
+            </div>
+            <button class="btn btn-connect btn-full" id="connectButton2" onclick="document.getElementById('connectButton').click()">
+              ⚡ Connect via BLE
+            </button>
+          </div>
+
+          <div class="diag-mini-card">
+            <div class="info-row"><span>BLE Device</span><strong>FARMER ATI</strong></div>
+            <div class="info-row"><span>Service UUID</span><code>0xA000</code></div>
+            <div class="info-row"><span>Characteristic</span><code>0xA001</code></div>
+          </div>
+
+          <div class="diag-mini-card">
+            <div class="info-row"><span>Protocol Header</span><code>0xFA 0x72 (Framed)</code></div>
+            <div class="info-row"><span>Last Sync Time</span><strong id="debugLastSync">—</strong></div>
+            <div class="info-row"><span>MicroPython</span><strong>v1.28.0</strong></div>
           </div>
         </div>
-      </div>
 
-      <div class="live-hint">
-        📟 This panel mirrors exactly what is displayed on the ESP32 OLED. Use the physical keypad to navigate.
       </div>
-    </div>
-
-    <!-- Connection sidebar -->
-    <div class="live-sidebar">
-      <div class="card">
-        <h2>Connection</h2>
-        <div class="sidebar-status">
-          <span class="status-dot dot-idle" id="connectionDot2"></span>
-          <span id="connectionStatus2">Not connected</span>
-        </div>
-        <button class="btn btn-connect btn-full" id="connectButton2" onclick="document.getElementById('connectButton').click()">
-          ⚡ Connect
-        </button>
-        <div class="muted" style="margin-top:10px; font-size:12px;">
-          BLE service: <code>0xA000</code><br>
-          Characteristic: <code>0xA001</code>
-        </div>
-      </div>
-
-      <div class="card">
-        <h2>ESP32 Info</h2>
-        <div class="info-row"><span>Device</span><strong>FARMER ATI</strong></div>
-        <div class="info-row"><span>Protocol</span><strong>BLE GATT</strong></div>
-        <div class="info-row"><span>Firmware</span><strong>MicroPython 1.28</strong></div>
-        <div class="info-row"><span>OLED</span><strong>SH1106 128×64</strong></div>
-      </div>
-
-      <div class="card">
-        <h2>BLE Diagnostics</h2>
-        <div class="info-row"><span>Packets received</span><strong id="debugPackets">0</strong></div>
-        <div class="info-row"><span>Messages complete</span><strong id="debugMessages">0</strong></div>
-        <div class="info-row"><span>Incomplete / Dropped</span><strong id="debugDropped">0</strong></div>
-        <div class="info-row"><span>JSON errors</span><strong id="debugErrors">0</strong></div>
-        <div class="info-row"><span>Last sync</span><strong id="debugLastSync">—</strong></div>
-      </div>
-    </div>
-
+    </details>
   </div>
 
 </section>
@@ -211,11 +262,11 @@
 ═══════════════════════════════════════════════ -->
 <section class="tab-page" id="tab-crops">
   <div class="card">
-    <h2>Crop Library</h2>
-    <p class="muted">All crops in the FARMER ATI database. The <span class="oled-badge">On OLED</span> badge shows which crop is currently visible on the ESP32.</p>
+    <h2>Crop Agronomy Library</h2>
+    <p class="muted">All crops in the FARMER ATI agronomy database. The <span class="oled-badge">On OLED</span> badge marks the crop currently active on the ESP32.</p>
     <div class="crop-grid" id="cropGrid"></div>
     <div class="crop-detail" id="cropDetail">
-      <div class="muted">Select a crop above to view its full guide.</div>
+      <div class="muted">Select any crop above to view its detailed cultivation and management guide.</div>
     </div>
   </div>
 </section>
@@ -225,8 +276,8 @@
 ═══════════════════════════════════════════════ -->
 <section class="tab-page" id="tab-problems">
   <div class="card">
-    <h2>Common Farmer Problems</h2>
-    <p class="muted">Practical guidance from the FARMER ATI program, mirroring the ESP32 problem guide.</p>
+    <h2>Common Farmer Problems &amp; Practical Solutions</h2>
+    <p class="muted">Expert guidance from the FARMER ATI agricultural database, mirroring the ESP32 diagnostic guide.</p>
     <div class="problem-grid" id="problemGrid"></div>
   </div>
 </section>
@@ -236,28 +287,28 @@
 ═══════════════════════════════════════════════ -->
 <section class="tab-page" id="tab-calculator">
   <div class="card calc-card">
-    <h2>Seed Rate Calculator</h2>
-    <p class="muted">Mirrors the calculator built into the ESP32 keypad program.</p>
+    <h2>Seed Rate &amp; Planting Calculator</h2>
+    <p class="muted">Mirrors the mathematical calculation model implemented in the ESP32 keypad firmware.</p>
 
     <div class="calc-form">
       <div class="form-group">
-        <label for="calcCrop">Crop</label>
+        <label for="calcCrop">Select Target Crop</label>
         <select id="calcCrop" class="form-control">
           <option value="" disabled selected>Select crop…</option>
         </select>
       </div>
 
       <div class="form-group">
-        <label for="calcArea">Area (acres) or Canopy size</label>
+        <label for="calcArea">Field Area (Acres) or Tree Canopy</label>
         <input id="calcArea" type="number" class="form-control" placeholder="e.g. 2.5" min="0" step="0.01">
       </div>
 
       <div class="form-group">
-        <label for="calcRate">Seed rate (kg/acre) or rate per unit</label>
+        <label for="calcRate">Seed Rate (kg/acre) or Rate per Unit</label>
         <input id="calcRate" type="number" class="form-control" placeholder="e.g. 20" min="0" step="0.01">
       </div>
 
-      <button class="btn btn-connect" id="calcBtn">Calculate</button>
+      <button class="btn btn-connect" id="calcBtn">Compute Requirement</button>
     </div>
 
     <div id="calcResult" class="calc-result"></div>
@@ -266,8 +317,15 @@
 
 </main>
 
+<!-- ══════════════════════════════════════════════
+     SITE FOOTER
+═══════════════════════════════════════════════ -->
 <footer class="site-footer">
-  FARMER ATI · Kendriya Vidyalaya No.2 · NCSC 2026–27 · Bluetooth LE Dashboard
+  <div class="footer-content">
+    <span>FARMER ATI &bull; Kendriya Vidyalaya No.2 &bull; NCSC 2026–27</span>
+    <span class="footer-divider">&bull;</span>
+    <span>Bluetooth LE Android Tablet Mirror</span>
+  </div>
 </footer>
 
 <script src="script.js"></script>
