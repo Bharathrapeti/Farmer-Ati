@@ -87,6 +87,8 @@ a {
   border-bottom: 2px solid rgba(34, 197, 94, 0.25);
   box-shadow: 0 4px 20px rgba(7, 25, 15, 0.25);
   flex-wrap: wrap;
+  position: relative;
+  z-index: 10;
 }
 
 .header-brand {
@@ -169,6 +171,8 @@ a {
   border-bottom: 1px solid var(--cream-border);
   overflow-x: auto;
   scrollbar-width: none;
+  position: relative;
+  z-index: 10;
 }
 .tab-bar::-webkit-scrollbar { display: none; }
 
@@ -216,6 +220,8 @@ a {
   max-width: 1200px;
   margin: 0 auto;
   padding: 24px 20px 48px;
+  position: relative;
+  z-index: 1;
 }
 
 .tab-page {
@@ -374,6 +380,34 @@ a {
 }
 
 /* ══════════════════════════════════════════════
+   LIVE DISPLAY PHOTO BACKDROP (Full Backside Space Behind Display)
+═══════════════════════════════════════════════ */
+.live-tab-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 0;
+  pointer-events: none;
+  background-image: url('farmer_bg.jpg');
+  background-size: cover;
+  background-position: center 25%;
+  background-repeat: no-repeat;
+  opacity: 0.68; /* Increased opacity to clearly see the photo */
+  filter: saturate(115%) contrast(104%);
+}
+
+.live-tab-backdrop::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 45%, rgba(250, 247, 240, 0.10) 0%, rgba(250, 247, 240, 0.35) 100%);
+  backdrop-filter: blur(1.5px);
+  -webkit-backdrop-filter: blur(1.5px);
+}
+
+/* ══════════════════════════════════════════════
    TAB 2: REDESIGNED LIVE DISPLAY (10:8 KIOSK)
 ═══════════════════════════════════════════════ */
 .kiosk-stage {
@@ -382,6 +416,8 @@ a {
   align-items: center;
   width: 100%;
   padding: 6px 0 20px;
+  position: relative;
+  z-index: 2;
 }
 
 /* 10:8 Aspect Ratio Landscape Tablet Kiosk Container */
@@ -523,39 +559,17 @@ a {
   margin-top: 2px;
 }
 
-/* Kiosk Screen Viewport with Frosted Glass Backdrop Photo */
+/* Kiosk Screen Viewport (Clean, High-Contrast OLED Display Canvas) */
 .kiosk-screen-viewport {
   flex: 1;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   position: relative;
-  background-image: url('farmer_bg.jpg');
-  background-size: cover;
-  background-position: center 20%;
-  background-repeat: no-repeat;
-}
-
-/* Decreasing Image Glass Overlay (Frosted Glassmorphism Layer) */
-.kiosk-screen-viewport::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.72) 0%,
-    rgba(250, 247, 240, 0.80) 50%,
-    rgba(244, 239, 228, 0.88) 100%
-  );
-  backdrop-filter: blur(10px) saturate(135%);
-  -webkit-backdrop-filter: blur(10px) saturate(135%);
-  pointer-events: none;
-  z-index: 1;
+  background: var(--cream-surface);
 }
 
 .live-screen-frame {
-  position: relative;
-  z-index: 2;
   flex: 1;
   padding: 24px 30px;
   overflow-y: auto;
@@ -563,20 +577,20 @@ a {
   flex-direction: column;
   gap: 12px;
   scrollbar-width: thin;
-  scrollbar-color: var(--emerald-glow) rgba(255, 255, 255, 0.4);
+  scrollbar-color: var(--emerald-glow) var(--cream-muted);
 }
 .live-screen-frame::-webkit-scrollbar {
   width: 6px;
 }
 .live-screen-frame::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.3);
+  background: var(--cream-muted);
 }
 .live-screen-frame::-webkit-scrollbar-thumb {
   background: var(--forest-soft);
   border-radius: 4px;
 }
 
-/* Empty State with Frosted Glass */
+/* Empty State */
 .live-empty {
   display: flex;
   flex-direction: column;
@@ -585,12 +599,9 @@ a {
   text-align: center;
   height: 100%;
   padding: 40px 24px;
-  border: 2px dashed rgba(27, 77, 49, 0.3);
+  border: 2px dashed var(--cream-border);
   border-radius: var(--radius-md);
-  background: rgba(255, 255, 255, 0.82);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  box-shadow: 0 8px 24px rgba(13, 40, 24, 0.06);
+  background: rgba(255, 255, 255, 0.85);
 }
 .live-empty-icon {
   font-size: 42px;
@@ -610,20 +621,18 @@ a {
   max-width: 340px;
 }
 
-/* ── KIOSK LINES TYPOGRAPHY & FROSTED GLASS CARDS ─────────────────── */
+/* ── KIOSK LINES TYPOGRAPHY & CARDS ─────────────────── */
 .live-line {
   font-family: var(--font-sans);
   font-size: 1.25rem; /* ~20px - 21px: large, crystal-clear readability */
   font-weight: 600;
   line-height: 1.45;
   color: var(--forest-dark);
-  background: rgba(255, 255, 255, 0.86);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border: 1.5px solid rgba(255, 255, 255, 0.75);
+  background: #ffffff;
+  border: 1.5px solid var(--cream-border);
   border-radius: var(--radius-sm);
   padding: 15px 22px;
-  box-shadow: 0 4px 14px rgba(13, 40, 24, 0.07);
+  box-shadow: 0 2px 8px rgba(13, 40, 24, 0.04);
   transition: all 0.24s cubic-bezier(0.16, 1, 0.3, 1);
   display: flex;
   align-items: center;
@@ -649,16 +658,14 @@ a {
   font-size: 1.65rem; /* ~26px */
   font-weight: 800;
   color: var(--forest-black);
-  background: rgba(255, 255, 255, 0.65);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  background: transparent;
   border: none;
   border-bottom: 3px solid var(--emerald-bright);
-  border-radius: var(--radius-xs);
-  box-shadow: 0 2px 8px rgba(13, 40, 24, 0.05);
+  border-radius: 0;
+  box-shadow: none;
   justify-content: center;
   text-align: center;
-  padding: 10px 18px 14px;
+  padding: 8px 0 16px;
   margin-bottom: 8px;
   letter-spacing: -0.01em;
 }
@@ -668,13 +675,11 @@ a {
   font-size: 1.35rem; /* ~22px */
   font-weight: 800;
   color: #ffffff;
-  background: linear-gradient(135deg, rgba(7, 25, 15, 0.94) 0%, rgba(13, 40, 24, 0.92) 50%, rgba(26, 77, 49, 0.94) 100%);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: linear-gradient(135deg, var(--forest-black) 0%, var(--forest-dark) 40%, var(--forest-mid) 100%);
   border: 2.5px solid var(--emerald-bright);
   border-radius: var(--radius-md);
   padding: 17px 24px;
-  box-shadow: 0 12px 32px -4px rgba(7, 25, 15, 0.45), 0 0 20px rgba(34, 197, 94, 0.35);
+  box-shadow: 0 10px 28px -4px rgba(7, 25, 15, 0.35), 0 0 18px rgba(34, 197, 94, 0.3);
   position: relative;
   transform: scale(1.015);
 }
@@ -701,11 +706,9 @@ a {
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: var(--forest-dark);
-  background: rgba(236, 253, 245, 0.92);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  border: 1.5px solid rgba(34, 197, 94, 0.4);
+  color: var(--forest-soft);
+  background: var(--emerald-tint);
+  border: 1.5px solid rgba(34, 197, 94, 0.3);
   border-radius: var(--radius-xs);
   padding: 8px 14px;
   margin-top: 6px;
@@ -751,10 +754,14 @@ a {
 .diagnostics-wrapper {
   max-width: 860px;
   margin: 12px auto 0;
+  position: relative;
+  z-index: 2;
 }
 
 .diagnostics-drawer {
-  background: var(--cream-pure);
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border: 1.5px solid var(--cream-border);
   border-radius: var(--radius-md);
   box-shadow: var(--card-shadow);

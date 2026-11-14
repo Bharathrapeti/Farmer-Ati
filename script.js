@@ -68,6 +68,7 @@ $$('.tab-button').forEach(btn => {
   btn.addEventListener('click', () => {
     $$('.tab-button').forEach(b => b.classList.toggle('active', b === btn));
     $$('.tab-page').forEach(p => p.classList.toggle('active', p.id === btn.dataset.tab));
+    document.body.classList.toggle('tab-live-active', btn.dataset.tab === 'tab-live');
   });
 });
 
