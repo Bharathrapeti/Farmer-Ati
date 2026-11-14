@@ -320,6 +320,9 @@ function setStatus(state, message) {
   const msg  = $('connectionMessage');
   const stat = $('statConnection');
 
+  const dot2 = $('connectionDot2');
+  const txt2 = $('connectionStatus2');
+
   const states = {
     idle:        { dot: 'dot-idle',        label: 'Not connected',  msg: message || 'Click "Connect to FARMER ATI" to begin.' },
     connecting:  { dot: 'dot-connecting',  label: 'Connecting…',    msg: message || 'Opening Bluetooth dialog…' },
@@ -331,6 +334,8 @@ function setStatus(state, message) {
   const s = states[state] || states.idle;
   if (dot) { dot.className = 'status-dot ' + s.dot; }
   if (txt) txt.textContent = s.label;
+  if (dot2) { dot2.className = 'status-dot ' + s.dot; }
+  if (txt2) txt2.textContent = s.label;
   if (msg) msg.textContent = s.msg;
   if (stat) stat.textContent = s.label;
 }
@@ -346,7 +351,10 @@ async function connectBLE() {
 
   try {
     bleDevice = await navigator.bluetooth.requestDevice({
-      filters: [{ name: BLE_DEVICE_NAME }],
+      filters: [
+        { name: BLE_DEVICE_NAME },
+        { services: [BLE_SERVICE_UUID] }
+      ],
       optionalServices: [BLE_SERVICE_UUID]
     });
 
