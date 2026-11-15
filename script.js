@@ -1114,6 +1114,7 @@ function updatePondTelemetryUI(data) {
   if (data.se) pondTelemetry.season = data.se;
   if (Array.isArray(data.rc)) pondTelemetry.recCrops = data.rc;
   if (data.cc) pondTelemetry.currentCrop = data.cc;
+  if (data.tc !== undefined) pondTelemetry.tankWaterCm = Number(data.tc) || 0;
   if (data.ss !== undefined) pondTelemetry.sensorStatus = data.ss;
 
   const nowTime = new Date().toLocaleTimeString();
@@ -1140,15 +1141,19 @@ function updatePondTelemetryUI(data) {
     if (pondTelemetry.mode === 'pond') {
       const status = pondTelemetry.sensorStatus || 'OK';
       if (status === 'OK' && pondTelemetry.sensorDist !== null) {
-        sensorEl.innerHTML = `<span style="color:#10b981;font-weight:700">● LIVE</span> Echo: <strong>${pondTelemetry.sensorDist.toFixed(2)} m</strong> · Ref: 5.0m · <span style="opacity:0.85">${nowTime}</span>`;
+        const echoCm = (pondTelemetry.sensorDist * 100).toFixed(1);
+        const tankWaterCm = data.tc !== undefined
+          ? Number(data.tc).toFixed(1)
+          : Math.max(0, Math.min(10, (15 - pondTelemetry.sensorDist * 100))).toFixed(1);
+        sensorEl.innerHTML = `<span style="color:#10b981;font-weight:700">● LIVE</span> Tank Echo: <strong>${echoCm} cm</strong> (Water: <strong>${tankWaterCm} cm</strong> / 10cm) &bull; 50x Scale: <strong>${pondTelemetry.waterDepth.toFixed(2)} m / 5.0m</strong> &bull; <span style="opacity:0.85">${nowTime}</span>`;
       } else if (status === 'TIMEOUT' || status === 'NO_ECHO') {
-        sensorEl.innerHTML = `<span style="color:#ef4444;font-weight:700">⚠️ SENSOR TIMEOUT</span> · No Echo Detected · Ref: 5.0m · <span style="opacity:0.85">${nowTime}</span>`;
+        sensorEl.innerHTML = `<span style="color:#ef4444;font-weight:700">⚠️ SENSOR TIMEOUT</span> &bull; No Echo in Demo Tank &bull; <span style="opacity:0.85">${nowTime}</span>`;
       } else if (status === 'OUT_OF_RANGE') {
-        sensorEl.innerHTML = `<span style="color:#f59e0b;font-weight:700">⚠️ LOW WATER LEVEL</span> · Range &gt; 4.0m · Ref: 5.0m · <span style="opacity:0.85">${nowTime}</span>`;
+        sensorEl.innerHTML = `<span style="color:#f59e0b;font-weight:700">⚠️ OUT OF RANGE</span> &bull; Echo &gt; 30cm &bull; <span style="opacity:0.85">${nowTime}</span>`;
       } else {
         sensorEl.textContent = pondTelemetry.sensorDist !== null
-          ? `HC-SR04 Echo: ${pondTelemetry.sensorDist.toFixed(2)} m · Ref: 5.0m`
-          : 'HC-SR04 > 4.0m / Low Water';
+          ? `Tank Echo: ${(pondTelemetry.sensorDist * 100).toFixed(1)} cm · 50x Scale: ${pondTelemetry.waterDepth.toFixed(2)} m`
+          : 'Demo Tank: No Echo';
       }
     } else {
       sensorEl.textContent = 'Mode: Default Seasonal (No Sensor)';
@@ -1166,9 +1171,9 @@ function updatePondTelemetryUI(data) {
   if (volM3El) {
     if (pondTelemetry.waterLitres > 0) {
       const m3 = (pondTelemetry.waterLitres / 1000).toFixed(0);
-      volM3El.textContent = `${m3} m³ usable · 75% eff. (0.3m dead storage)`;
+      volM3El.textContent = `${m3} m³ usable · 75% eff. (0.3m dead storage · 1-acre model)`;
     } else {
-      volM3El.textContent = '75% Irrig. Eff. · Dead Storage 0.3m';
+      volM3El.textContent = '75% Irrig. Eff. · Dead Storage 0.3m · 1-acre model';
     }
   }
 
