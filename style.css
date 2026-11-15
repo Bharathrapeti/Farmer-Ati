@@ -180,23 +180,44 @@ a {
 .tab-bar {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   gap: 8px;
-  padding: 8px 12px;
-  background: rgba(8, 26, 16, 0.60);
+  padding: 8px 14px;
+  background: rgba(8, 26, 16, 0.65);
   backdrop-filter: blur(24px) saturate(180%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
   border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: var(--radius-pill);
-  max-width: fit-content;
+  width: max-content;
+  max-width: calc(100% - 24px);
   margin: 22px auto 0;
   box-shadow: 0 12px 36px rgba(0, 0, 0, 0.42);
   overflow-x: auto;
-  scrollbar-width: none;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x pan-y;
+  scroll-behavior: smooth;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(74, 222, 128, 0.45) transparent;
   position: relative;
   z-index: 10;
 }
-.tab-bar::-webkit-scrollbar { display: none; }
+.tab-bar::-webkit-scrollbar {
+  height: 4px;
+}
+.tab-bar::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 4px;
+  margin: 0 16px;
+}
+.tab-bar::-webkit-scrollbar-thumb {
+  background: rgba(74, 222, 128, 0.45);
+  border-radius: 4px;
+}
+.tab-bar::-webkit-scrollbar-thumb:hover {
+  background: rgba(74, 222, 128, 0.75);
+}
 
 .tab-button {
   border: 1px solid transparent;
@@ -211,6 +232,9 @@ a {
   transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
   white-space: nowrap;
   letter-spacing: 0.02em;
+  flex-shrink: 0;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .tab-button:hover {
@@ -1838,11 +1862,25 @@ a {
   }
 }
 
+/* Tablet Optimization (<= 900px) */
+@media (max-width: 900px) {
+  .tab-bar {
+    max-width: calc(100% - 20px);
+    margin: 16px auto 0;
+    padding: 7px 10px;
+    gap: 6px;
+  }
+  .tab-button {
+    padding: 9px 16px;
+    font-size: 13.5px;
+  }
+}
+
 /* Ultra Small Screens (< 480px) */
 @media (max-width: 480px) {
   .site-header { padding: 12px 16px; }
-  .tab-bar { padding: 8px 12px 0; }
-  .tab-button { padding: 10px 14px; font-size: 13px; }
+  .tab-bar { padding: 6px 10px; gap: 6px; margin: 14px auto 0; }
+  .tab-button { padding: 8px 12px; font-size: 13px; }
   .main-shell { padding: 14px 12px 32px; }
   .stat-grid { grid-template-columns: 1fr 1fr; }
   .crop-grid { grid-template-columns: repeat(2, 1fr); }
