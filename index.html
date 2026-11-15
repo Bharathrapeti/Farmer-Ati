@@ -48,24 +48,15 @@
 ═══════════════════════════════════════════════ -->
 <section class="tab-page active" id="tab-overview">
 
-  <!-- Bluetooth Connection Widget (Compact Aside) -->
+  <!-- Bluetooth Connection Action Button (Neat Aside) -->
   <div class="connect-bar-wrapper">
-    <div class="card connect-card">
-      <div class="connect-left">
-        <div class="connect-title">Bluetooth Connection</div>
-        <div class="connect-message" id="connectionMessage">
-          Click <strong>Connect</strong> to link Android tablet via BLE.
-        </div>
-      </div>
-      <div class="connect-buttons">
-        <button class="btn btn-connect" id="connectButton">
-          <span>⚡</span> Connect
-        </button>
-        <button class="btn btn-disconnect" id="disconnectButton" style="display:none">
-          Disconnect
-        </button>
-      </div>
-    </div>
+    <button class="btn btn-connect" id="connectButton">
+      <span>⚡</span> Connect
+    </button>
+    <button class="btn btn-disconnect" id="disconnectButton" style="display:none">
+      Disconnect
+    </button>
+    <span id="connectionMessage" style="display:none"></span>
   </div>
 
   <!-- ══════════════════════════════════════════════
