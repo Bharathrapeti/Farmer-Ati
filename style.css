@@ -1907,6 +1907,172 @@ a {
 
 
 /* ══════════════════════════════════════════════
+   AGRICULTURAL WEATHER ADVISORY SCROLLING TICKER
+═══════════════════════════════════════════════ */
+.advisory-ticker-container {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  margin: 10px 0 16px 0;
+  padding: 8px 14px;
+  background: rgba(8, 26, 16, 0.72);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(74, 222, 128, 0.40);
+  border-radius: var(--radius-pill);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.42);
+  overflow: hidden;
+  position: relative;
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  box-sizing: border-box;
+}
+
+/* Status variants */
+.advisory-ticker-container.status-suitable {
+  border-color: rgba(74, 222, 128, 0.50);
+  box-shadow: 0 8px 28px rgba(34, 197, 94, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  background: rgba(8, 26, 16, 0.75);
+}
+.advisory-ticker-container.status-caution {
+  border-color: rgba(251, 191, 36, 0.55);
+  box-shadow: 0 8px 28px rgba(245, 158, 11, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  background: rgba(28, 22, 8, 0.75);
+}
+.advisory-ticker-container.status-warning {
+  border-color: rgba(248, 113, 113, 0.60);
+  box-shadow: 0 8px 28px rgba(239, 68, 68, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  background: rgba(32, 10, 10, 0.78);
+}
+.advisory-ticker-container.status-unknown {
+  border-color: rgba(148, 163, 184, 0.35);
+  box-shadow: 0 8px 28px rgba(100, 116, 139, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  background: rgba(15, 23, 42, 0.75);
+}
+
+/* Status Pill / Badge */
+.advisory-ticker-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: var(--radius-pill);
+  font-family: var(--font-display);
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: all 0.3s ease;
+}
+
+.status-suitable .advisory-ticker-badge {
+  background: rgba(34, 197, 94, 0.22);
+  border: 1px solid rgba(74, 222, 128, 0.65);
+  color: #4ade80;
+}
+.status-caution .advisory-ticker-badge {
+  background: rgba(245, 158, 11, 0.22);
+  border: 1px solid rgba(251, 191, 36, 0.65);
+  color: #fbbf24;
+}
+.status-warning .advisory-ticker-badge {
+  background: rgba(239, 68, 68, 0.22);
+  border: 1px solid rgba(248, 113, 113, 0.65);
+  color: #f87171;
+}
+.status-unknown .advisory-ticker-badge {
+  background: rgba(148, 163, 184, 0.20);
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  color: #cbd5e1;
+}
+
+.advisory-badge-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 10px currentColor;
+  animation: badgeDotPulse 2s ease-in-out infinite;
+}
+
+@keyframes badgeDotPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.35; transform: scale(0.8); }
+}
+
+/* Marquee Track */
+.advisory-ticker-track {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  position: relative;
+  white-space: nowrap;
+  mask-image: linear-gradient(to right, transparent 0%, black 20px, black calc(100% - 20px), transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 20px, black calc(100% - 20px), transparent 100%);
+}
+
+/* Continuous Marquee Text: Starts outside right edge (padding-left: 100%), moves left until entire text exits left edge (-100%) */
+.advisory-ticker-text {
+  display: inline-block;
+  white-space: nowrap;
+  padding-left: 100%;
+  animation: tickerMarquee 26s linear infinite;
+  font-family: var(--font-sans);
+  font-size: 13.5px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.95);
+  letter-spacing: 0.02em;
+  will-change: transform;
+}
+
+@keyframes tickerMarquee {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(-100%, 0, 0);
+  }
+}
+
+/* Tablet & Mobile Responsiveness for Ticker */
+@media (max-width: 768px) {
+  .advisory-ticker-container {
+    padding: 6px 10px;
+    gap: 10px;
+    margin: 8px 0 14px 0;
+  }
+  .advisory-ticker-badge {
+    padding: 5px 10px;
+    font-size: 10.5px;
+  }
+  .advisory-ticker-text {
+    font-size: 12.5px;
+  }
+}
+
+@media (max-width: 480px) {
+  .advisory-ticker-container {
+    padding: 5px 8px;
+    gap: 8px;
+    margin: 6px 0 12px 0;
+  }
+  .advisory-ticker-badge {
+    padding: 4px 8px;
+    font-size: 9.5px;
+    gap: 6px;
+  }
+  .advisory-badge-dot {
+    width: 6px;
+    height: 6px;
+  }
+  .advisory-ticker-text {
+    font-size: 11.5px;
+  }
+}
+
+/* ══════════════════════════════════════════════
    COMPACT LIVE WEATHER WIDGET (MATCHING REFERENCE)
 ═══════════════════════════════════════════════ */
 .weather-compact-container {

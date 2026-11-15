@@ -3260,6 +3260,9 @@ const liveWeatherState = {
   timer: null
 };
 
+let lastSuccessfulWeatherFetch = null;
+let lastWeatherPayload = null;
+
 function initLiveWeather() {
   // 1. Immediately format today's date
   const dateEl = $('weatherCompactDate');
@@ -3267,10 +3270,20 @@ function initLiveWeather() {
     dateEl.textContent = formatWeatherDate(new Date());
   }
 
-  // 2. Click on the right bubble to refresh live weather
+  // Initial placeholder advisory matching standard clear/favourable starting state
+  updateAdvisoryTicker('suitable', "🟢 SUITABLE FOR SPRAYING — 🌱 FARMER ATI ADVISORY: Today's weather conditions are favourable for crop spraying. Check wind speed and ensure crop foliage is dry before application. Follow recommended product dosage and wear personal protective equipment (PPE).");
+
+  // 2. Click on the right bubble or ticker to refresh live weather
   const bubble = document.querySelector('.weather-glass-bubble');
   if (bubble) {
     bubble.addEventListener('click', () => {
+      fetchOpenMeteoWeather(liveWeatherState.lat, liveWeatherState.lon);
+    });
+  }
+
+  const tickerContainer = $('advisoryTickerContainer');
+  if (tickerContainer) {
+    tickerContainer.addEventListener('click', () => {
       fetchOpenMeteoWeather(liveWeatherState.lat, liveWeatherState.lon);
     });
   }
@@ -3321,15 +3334,173 @@ function extractCurrentHourRainProbability(hourly) {
 
 async function fetchOpenMeteoWeather(lat, lon) {
   try {
-    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&hourly=precipitation_probability&daily=temperature_2m_max,temperature_2m_min&timezone=auto`;
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m,wind_gusts_10m&hourly=precipitation_probability,precipitation&daily=temperature_2m_max,temperature_2m_min&timezone=auto`;
     const res = await fetch(url);
-    if (!res.ok) return;
+    if (!res.ok) {
+      handleWeatherFetchStaleness();
+      return;
+    }
     const json = await res.json();
-    if (!json || !json.current) return;
+    if (!json || !json.current) {
+      handleWeatherFetchStaleness();
+      return;
+    }
 
+    lastSuccessfulWeatherFetch = Date.now();
+    lastWeatherPayload = json;
     renderCompactWeatherUI(json);
+    updateAdvisoryTickerFromWeather(json);
   } catch (_) {
-    // Retain default values on network errors silently
+    handleWeatherFetchStaleness();
+  }
+}
+
+function handleWeatherFetchStaleness() {
+  if (!lastWeatherPayload || !lastSuccessfulWeatherFetch) {
+    updateAdvisoryTicker('unknown', "⚪ INSUFFICIENT WEATHER DATA — ℹ️ FARMER ATI ADVISORY: Real-time weather measurements unavailable. Spraying suitability cannot be confirmed. Verify local wind speed, foliage wetness, and rain probability manually before chemical application.");
+    return;
+  }
+  const ageMinutes = Math.round((Date.now() - lastSuccessfulWeatherFetch) / 60000);
+  if (ageMinutes > 35) {
+    const evalResult = evaluateSprayAdvisory(lastWeatherPayload);
+    updateAdvisoryTicker(evalResult.status, `⚠️ STALE WEATHER ADVISORY (Updated ${ageMinutes} min ago) — ${evalResult.message}`);
+  }
+}
+
+function evaluateSprayAdvisory(weatherData) {
+  if (!weatherData || !weatherData.current) {
+    return {
+      status: 'unknown',
+      message: "⚪ INSUFFICIENT WEATHER DATA — ℹ️ FARMER ATI ADVISORY: Weather information is incomplete. Check local field conditions before chemical application."
+    };
+  }
+
+  const cur = weatherData.current;
+  const hourly = weatherData.hourly || {};
+  const temp = Math.round(Number(cur.temperature_2m ?? 28));
+  const humidity = Math.round(Number(cur.relative_humidity_2m ?? 65));
+  const wCode = Number(cur.weather_code ?? 0);
+  const conditionName = WMO_WEATHER_NAMES[wCode] || "Clear";
+  const windSpeed = Math.round(Number(cur.wind_speed_10m ?? 8));
+  const windGusts = Math.round(Number(cur.wind_gusts_10m ?? (windSpeed * 1.3)));
+  const rainProb = extractCurrentHourRainProbability(hourly);
+
+  // Check upcoming 3-4 hours rainfall forecast
+  let maxNextRainProb = rainProb;
+  let nextRainMm = 0;
+  if (hourly.precipitation_probability && hourly.precipitation_probability.length) {
+    const nextHours = hourly.precipitation_probability.slice(0, 4);
+    maxNextRainProb = Math.max(...nextHours, rainProb);
+  }
+  if (hourly.precipitation && hourly.precipitation.length) {
+    const nextP = hourly.precipitation.slice(0, 4);
+    nextRainMm = nextP.reduce((a, b) => a + (Number(b) || 0), 0);
+  }
+
+  // 1. Rain / Storm Warning (RED)
+  // WMO codes: 51-67 (Drizzle/Rain), 80-82 (Showers), 95-99 (Thunderstorms)
+  const isRainingNow = [51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82, 95, 96, 99].includes(wCode);
+  if (isRainingNow || maxNextRainProb >= 50 || nextRainMm > 0.8) {
+    return {
+      status: 'warning',
+      message: `🔴 NOT RECOMMENDED FOR SPRAYING — 🌧️ WEATHER ALERT: Rain or precipitation expected (Rain risk: ${maxNextRainProb}%, Condition: ${conditionName}). Postpone chemical application to prevent pesticide wash-off and reduced efficacy. Observe product-specific rain-fast intervals before application.`
+    };
+  }
+
+  // 2. High Wind / Drift Risk (RED)
+  if (windSpeed > 20 || windGusts > 25) {
+    return {
+      status: 'warning',
+      message: `🔴 NOT RECOMMENDED FOR SPRAYING — 💨 WEATHER ALERT: Strong winds detected (Wind: ${windSpeed} km/h, Gusts: ${windGusts} km/h). Avoid spraying to prevent chemical drift towards nearby crops, residential areas, people, and water bodies. Wait for safer, calmer conditions.`
+    };
+  }
+
+  // 3. Extreme High Temperature (RED)
+  if (temp >= 35) {
+    return {
+      status: 'warning',
+      message: `🔴 NOT RECOMMENDED FOR SPRAYING — ☀️ WEATHER ALERT: High temperatures detected (${temp}°C). Avoid spraying in extreme heat; high evaporation rates increase foliar scorch and crop-injury risk. Reschedule operations to cooler, calmer morning or late afternoon hours.`
+    };
+  }
+
+  // 4. Fog / Mist / Saturated Dew (YELLOW - Caution)
+  if ([45, 48].includes(wCode) || humidity >= 90) {
+    return {
+      status: 'caution',
+      message: `🟡 CAUTION – CHECK CONDITIONS — 🌫️ WEATHER ALERT: Fog or high humidity detected (${humidity}%). Wait until visibility improves and crop foliage is completely dry before spraying. Wet foliage dilutes chemicals and causes excessive runoff.`
+    };
+  }
+
+  // 5. Moderate Wind or Dead Calm / Inversion Risk (YELLOW - Caution)
+  if (windSpeed > 15 && windSpeed <= 20) {
+    return {
+      status: 'caution',
+      message: `🟡 CAUTION – CHECK CONDITIONS — 🍃 SPRAYING WARNING: Moderate wind speed (${windSpeed} km/h). Windy conditions may cause spray droplets to drift away from the target crop. Use drift-reducing coarse nozzles and keep spray boom low.`
+    };
+  }
+  if (windSpeed < 3) {
+    return {
+      status: 'caution',
+      message: `🟡 CAUTION – CHECK CONDITIONS — 🌡️ INVERSION WARNING: Near dead-calm wind (${windSpeed} km/h). Risk of temperature inversion where airborne fine droplets stay suspended and drift unpredictably. Confirm active atmospheric mixing before spraying.`
+    };
+  }
+
+  // 6. Elevated Warm Temperature (YELLOW - Caution)
+  if (temp >= 30 && temp < 35) {
+    return {
+      status: 'caution',
+      message: `🟡 CAUTION – CHECK CONDITIONS — 🌤️ ELEVATED TEMPERATURE: Warm conditions detected (${temp}°C). Increased evaporation can reduce chemical uptake. Consider cooler, calmer morning or late evening hours when permitted by the pesticide label.`
+    };
+  }
+
+  // 7. Marginal Rain Probability (YELLOW - Caution)
+  if (maxNextRainProb >= 30 && maxNextRainProb < 50) {
+    return {
+      status: 'caution',
+      message: `🟡 CAUTION – CHECK CONDITIONS — ⛅ WEATHER ADVISORY: Marginal rain probability (${maxNextRainProb}%). Rain may wash chemicals from leaves. Follow the product-specific rain-free interval and ensure leaves stay dry after application.`
+    };
+  }
+
+  // 8. Favourable / Suitable Conditions (GREEN)
+  return {
+    status: 'suitable',
+    message: `🟢 SUITABLE FOR SPRAYING — 🌱 FARMER ATI ADVISORY: Today's weather conditions are favourable for crop spraying (Temp: ${temp}°C, Wind: ${windSpeed} km/h, Rain Risk: ${rainProb}%). Check wind speed and ensure crop leaves are dry before application. Follow the recommended dosage, wear protective equipment (PPE), and avoid spraying near water bodies.`
+  };
+}
+
+function updateAdvisoryTickerFromWeather(json) {
+  const evalResult = evaluateSprayAdvisory(json);
+  updateAdvisoryTicker(evalResult.status, evalResult.message);
+}
+
+function updateAdvisoryTicker(status, message) {
+  const container = $('advisoryTickerContainer');
+  const badgeLabel = $('advisoryBadgeLabel');
+  const textEl = $('advisoryTickerText');
+  if (!container || !textEl) return;
+
+  container.className = `advisory-ticker-container status-${status}`;
+  
+  const statusLabels = {
+    'suitable': 'SUITABLE FOR SPRAYING',
+    'caution':  'CAUTION – CHECK CONDITIONS',
+    'warning':  'NOT RECOMMENDED',
+    'unknown':  'INSUFFICIENT DATA'
+  };
+  if (badgeLabel) {
+    badgeLabel.textContent = statusLabels[status] || 'SPRAY ADVISORY';
+  }
+
+  if (textEl.textContent.trim() !== message.trim()) {
+    textEl.textContent = message;
+    
+    // Dynamic animation speed based on sentence length (approx 22-32 seconds)
+    const duration = Math.min(34, Math.max(20, Math.round(message.length * 0.16)));
+    
+    // Restart continuous animation smoothly from right edge
+    textEl.style.animation = 'none';
+    void textEl.offsetWidth; // Force reflow
+    textEl.style.animation = `tickerMarquee ${duration}s linear infinite`;
   }
 }
 
