@@ -39,6 +39,7 @@
   <button class="tab-button" data-tab="tab-crops">Crop Library</button>
   <button class="tab-button" data-tab="tab-problems">Farmer Problems</button>
   <button class="tab-button" data-tab="tab-calculator">Seed Calculator</button>
+  <button class="tab-button" data-tab="tab-nutrients">🌿 Nutrient Care</button>
 </nav>
 
 <main class="main-shell">
@@ -156,9 +157,6 @@
      TAB 2 — LIVE DISPLAY (8:10 KIOSK REDESIGN)
 ═══════════════════════════════════════════════ -->
 <section class="tab-page" id="tab-live">
-
-  <!-- Full-Screen Agricultural Photo Backdrop (Live Display Tab Only) -->
-  <div class="live-tab-backdrop" aria-hidden="true"></div>
 
   <!-- Main Kiosk Presentation Centerpiece -->
   <div class="kiosk-stage">
@@ -366,6 +364,54 @@
     </div>
 
     <div id="calcResult" class="calc-result"></div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════
+     TAB 6 — NUTRIENT CARE & DEFICIENCY GUIDE
+═══════════════════════════════════════════════ -->
+<section class="tab-page" id="tab-nutrients">
+  <div class="card">
+    <div class="nutrient-page-header">
+      <div>
+        <h2>Crop Nutrient Care &amp; Deficiency Guide</h2>
+        <p class="muted">Visual identification guide for plant nutrient deficiencies, leaf symptoms, affected organs, and actionable field fertilizer remedies.</p>
+      </div>
+      <div class="golden-rule-pill">
+        <span>💡 Balanced Nutrition = Healthy, Disease-Resilient Crop</span>
+      </div>
+    </div>
+
+    <!-- Filter & Search Bar -->
+    <div class="library-filter-bar">
+      <div class="filter-btn-group" id="nutrientFilterGroup">
+        <button class="filter-btn active" data-nutrient-filter="all">All Nutrients (<span id="countAllNutrients">12</span>)</button>
+        <button class="filter-btn" data-nutrient-filter="primary">Primary N-P-K (3)</button>
+        <button class="filter-btn" data-nutrient-filter="secondary">Secondary Ca-Mg-S (3)</button>
+        <button class="filter-btn" data-nutrient-filter="micronutrient">Micronutrients (6)</button>
+      </div>
+      <div class="filter-search-box">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="nutrientSearchInput" placeholder="Filter by nutrient, symptom (e.g. yellowing, purple)..." class="crop-search-input">
+      </div>
+    </div>
+
+    <!-- One-by-One Vertical Scroll Nutrient Feed -->
+    <div class="nutrient-feed" id="nutrientFeed"></div>
+
+    <!-- Golden Rules Callout Box -->
+    <div class="nutrient-rules-card">
+      <div class="rules-card-icon">💡</div>
+      <div class="rules-card-content">
+        <h3>Remember — Golden Agronomic Rules for Farm Nutrition</h3>
+        <ul class="rules-list">
+          <li><strong>Balanced Nutrition = Healthy Plant:</strong> Nitrogen builds the vegetative frame, Phosphorus drives root and flower vigor, and Potassium guards against drought, pests, and disease.</li>
+          <li><strong>Law of the Minimum (Liebig's Law):</strong> Plant growth is dictated by the scarcest nutrient (limiting factor). Adding excess Urea cannot compensate for a Zinc or Boron deficiency.</li>
+          <li><strong>Too Little or Too Much is Harmful:</strong> Over-application of Nitrogen invites succulent stems and fungal pests; excessive Potassium can lock out Magnesium and Calcium.</li>
+          <li><strong>Soil Testing &amp; Targeted Foliar Feeding:</strong> Conduct routine soil tests to know your baseline. When quick correction is required during peak vegetative or fruit development, foliar micronutrient sprays give rapid results.</li>
+        </ul>
+      </div>
+    </div>
   </div>
 </section>
 
