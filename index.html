@@ -61,6 +61,114 @@
   </div>
 
   <!-- ══════════════════════════════════════════════
+       AUTOMATIC LIVE WEATHER WIDGET (OPEN-METEO)
+  ═══════════════════════════════════════════════ -->
+  <div class="card weather-widget-card" id="weatherWidgetCard">
+    <!-- Header Row: Live Status + Location + Refresh -->
+    <div class="weather-top-row">
+      <div class="weather-badge-group">
+        <span class="weather-live-indicator">
+          <span class="live-pulse-dot"></span>
+          LIVE WEATHER
+        </span>
+        <span class="weather-stale-badge" id="weatherStaleBadge" style="display:none;">Stale Data</span>
+      </div>
+      <div class="weather-location-group" id="weatherLocationGroup">
+        <span class="loc-pin">📍</span>
+        <span class="loc-name" id="weatherPlaceName">Detecting Location…</span>
+        <button type="button" class="weather-refresh-btn" id="weatherRefreshBtn" title="Refresh Live Weather" aria-label="Refresh Live Weather">🔄</button>
+      </div>
+    </div>
+
+    <!-- Weather Content State Container -->
+    <div id="weatherContent">
+      <!-- Loading State -->
+      <div class="weather-loading" id="weatherLoading">
+        <div class="weather-spinner"></div>
+        <span>Detecting tablet GPS &amp; fetching live agricultural weather…</span>
+      </div>
+
+      <!-- Main Weather Content (Shown on success) -->
+      <div class="weather-main-grid" id="weatherMainGrid" style="display:none;">
+        <!-- Left: Huge Temp & Condition & High/Low & Rain Chance -->
+        <div class="weather-left-col">
+          <div class="weather-temp-row">
+            <div class="weather-temp-huge">
+              <span id="weatherTemp">--</span><span class="temp-unit">°C</span>
+            </div>
+            <div class="weather-condition-pill" id="weatherCondition">--</div>
+          </div>
+
+          <div class="weather-highlights-row">
+            <div class="weather-high-low-chip">
+              <span class="temp-high" title="Today's Maximum Temperature">↑ <strong id="weatherTempMax">--°C</strong></span>
+              <span class="temp-low" title="Today's Minimum Temperature">↓ <strong id="weatherTempMin">--°C</strong></span>
+            </div>
+            <div class="rain-probability-chip" title="Precipitation probability for current hour">
+              <span class="rain-icon">🌧️</span> Rain Chance: <strong id="weatherRainProb">--%</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Large Weather Symbol Graphic -->
+        <div class="weather-right-col">
+          <div class="weather-symbol-bubble" id="weatherSymbolBubble">
+            <span class="weather-symbol-graphic" id="weatherGraphic">🌤️</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom Agricultural Metrics Strip (Shown on success) -->
+      <div class="weather-metrics-strip" id="weatherMetricsStrip" style="display:none;">
+        <div class="weather-metric-item">
+          <span class="metric-icon">💧</span>
+          <div class="metric-info">
+            <span class="metric-label">Relative Humidity</span>
+            <span class="metric-val" id="weatherHumidity">--%</span>
+          </div>
+        </div>
+
+        <div class="weather-metric-item">
+          <span class="metric-icon">💨</span>
+          <div class="metric-info">
+            <span class="metric-label">Wind Speed</span>
+            <span class="metric-val" id="weatherWind">-- km/h</span>
+          </div>
+        </div>
+
+        <div class="weather-metric-item">
+          <span class="metric-icon">🌧️</span>
+          <div class="metric-info">
+            <span class="metric-label">Rain Probability</span>
+            <span class="metric-val" id="weatherRainStrip">--%</span>
+          </div>
+        </div>
+
+        <div class="weather-metric-item">
+          <span class="metric-icon">🕒</span>
+          <div class="metric-info">
+            <span class="metric-label">Last Updated</span>
+            <span class="metric-val" id="weatherLastUpdated">--</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Permission / Offline Notice Banner -->
+      <div class="weather-permission-notice" id="weatherNotice" style="display:none;">
+        <div class="notice-icon" id="weatherNoticeIcon">📍</div>
+        <div class="notice-body">
+          <div class="notice-title" id="weatherNoticeTitle">Location Access Required</div>
+          <div class="notice-text" id="weatherNoticeText">Allow browser location access on your Android tablet to see hyper-local live weather for your farm.</div>
+        </div>
+        <div class="notice-actions">
+          <button type="button" class="btn btn-connect btn-sm" id="weatherRetryBtn">Grant &amp; Retry</button>
+          <button type="button" class="btn btn-secondary btn-sm" id="weatherDefaultBtn">Use Default (Kalpakkam)</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════
        POND WATER & SEASONAL RECOMMENDATION TELEMETRY
   ═══════════════════════════════════════════════ -->
   <div class="card pond-telemetry-card" id="pondTelemetryCard">

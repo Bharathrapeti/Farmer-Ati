@@ -3113,6 +3113,345 @@ function buildNutrientCare() {
 
 
 // ============================================================
+// AUTOMATIC LIVE WEATHER SERVICE (OPEN-METEO)
+// ============================================================
+
+const WMO_WEATHER_CODES = {
+  0:  { label: "Clear Sky", icon: "☀️" },
+  1:  { label: "Mainly Clear", icon: "🌤️" },
+  2:  { label: "Partly Cloudy", icon: "⛅" },
+  3:  { label: "Overcast / Cloudy", icon: "☁️" },
+  45: { label: "Foggy", icon: "🌫️" },
+  48: { label: "Depositing Rime Fog", icon: "🌫️" },
+  51: { label: "Light Drizzle", icon: "🌦️" },
+  53: { label: "Moderate Drizzle", icon: "🌦️" },
+  55: { label: "Dense Drizzle", icon: "🌦️" },
+  56: { label: "Freezing Drizzle", icon: "🌧️" },
+  57: { label: "Heavy Freezing Drizzle", icon: "🌧️" },
+  61: { label: "Slight Rain", icon: "🌧️" },
+  63: { label: "Moderate Rain", icon: "🌧️" },
+  65: { label: "Heavy Rain", icon: "🌧️" },
+  66: { label: "Freezing Rain", icon: "🌧️" },
+  67: { label: "Heavy Freezing Rain", icon: "🌧️" },
+  71: { label: "Slight Snowfall", icon: "❄️" },
+  73: { label: "Moderate Snowfall", icon: "❄️" },
+  75: { label: "Heavy Snowfall", icon: "❄️" },
+  77: { label: "Snow Grains", icon: "❄️" },
+  80: { label: "Slight Rain Showers", icon: "🌦️" },
+  81: { label: "Moderate Rain Showers", icon: "🌧️" },
+  82: { label: "Violent Rain Showers", icon: "🌧️" },
+  85: { label: "Slight Snow Showers", icon: "🌨️" },
+  86: { label: "Heavy Snow Showers", icon: "🌨️" },
+  95: { label: "Thunderstorm", icon: "⛈️" },
+  96: { label: "Thunderstorm with Slight Hail", icon: "⛈️" },
+  99: { label: "Thunderstorm with Heavy Hail", icon: "⛈️" }
+};
+
+const liveWeatherState = {
+  lat: null,
+  lon: null,
+  placeName: null,
+  data: null,
+  lastFetchTime: null,
+  isStale: false,
+  timer: null
+};
+
+function initLiveWeather() {
+  const refreshBtn = $('weatherRefreshBtn');
+  const retryBtn = $('weatherRetryBtn');
+  const defaultBtn = $('weatherDefaultBtn');
+
+  if (refreshBtn) {
+    refreshBtn.addEventListener('click', () => {
+      if (liveWeatherState.lat && liveWeatherState.lon) {
+        fetchOpenMeteoWeather(liveWeatherState.lat, liveWeatherState.lon, true);
+      } else {
+        requestLocationAndFetch();
+      }
+    });
+  }
+
+  if (retryBtn) {
+    retryBtn.addEventListener('click', () => {
+      requestLocationAndFetch();
+    });
+  }
+
+  if (defaultBtn) {
+    defaultBtn.addEventListener('click', () => {
+      useDefaultWeatherLocation();
+    });
+  }
+
+  // Check cached coordinates in localStorage for instant display
+  const cachedLat = parseFloat(localStorage.getItem('farmer_weather_lat'));
+  const cachedLon = parseFloat(localStorage.getItem('farmer_weather_lon'));
+  const cachedPlace = localStorage.getItem('farmer_weather_place');
+
+  if (!isNaN(cachedLat) && !isNaN(cachedLon)) {
+    liveWeatherState.lat = cachedLat;
+    liveWeatherState.lon = cachedLon;
+    liveWeatherState.placeName = cachedPlace || `${cachedLat.toFixed(2)}°, ${cachedLon.toFixed(2)}°`;
+    updateWeatherLocationUI(liveWeatherState.placeName);
+    fetchOpenMeteoWeather(cachedLat, cachedLon);
+  }
+
+  // Request high-accuracy tablet location
+  requestLocationAndFetch();
+
+  // Set 15-minute automatic refresh loop
+  if (liveWeatherState.timer) clearInterval(liveWeatherState.timer);
+  liveWeatherState.timer = setInterval(() => {
+    if (liveWeatherState.lat && liveWeatherState.lon) {
+      fetchOpenMeteoWeather(liveWeatherState.lat, liveWeatherState.lon);
+    }
+  }, 15 * 60 * 1000);
+}
+
+function requestLocationAndFetch() {
+  const loadingEl = $('weatherLoading');
+  const noticeEl = $('weatherNotice');
+  if (loadingEl && !liveWeatherState.data) loadingEl.style.display = 'flex';
+  if (noticeEl) noticeEl.style.display = 'none';
+
+  if (!navigator.geolocation) {
+    showWeatherNotice(
+      "Geolocation Not Supported",
+      "Your browser does not support automatic location detection. Click below to use default farm location.",
+      true
+    );
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    onGeoSuccess,
+    onGeoError,
+    { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }
+  );
+}
+
+function onGeoSuccess(position) {
+  const lat = position.coords.latitude;
+  const lon = position.coords.longitude;
+  liveWeatherState.lat = lat;
+  liveWeatherState.lon = lon;
+
+  try {
+    localStorage.setItem('farmer_weather_lat', lat);
+    localStorage.setItem('farmer_weather_lon', lon);
+  } catch (_) {}
+
+  reverseGeocode(lat, lon);
+  fetchOpenMeteoWeather(lat, lon);
+}
+
+function onGeoError(err) {
+  console.warn("[Weather] Geolocation error:", err);
+  // If we already have coordinates and data, do not disturb user with an error
+  if (liveWeatherState.lat && liveWeatherState.data) return;
+
+  let msg = "Allow browser location access on your Android tablet to see hyper-local live weather for your farm.";
+  if (err.code === 1) {
+    msg = "Location permission was denied. Click 'Grant & Retry' or use default farm location.";
+  } else if (err.code === 2) {
+    msg = "Location unavailable. Ensure GPS is enabled on your device, or use default farm location.";
+  } else if (err.code === 3) {
+    msg = "Location request timed out. Please retry or use default farm location.";
+  }
+
+  showWeatherNotice("Location Access Needed", msg, true);
+}
+
+function useDefaultWeatherLocation() {
+  const defaultLat = 12.5043;
+  const defaultLon = 80.1656;
+  const defaultPlace = "Kalpakkam, Tamil Nadu";
+
+  liveWeatherState.lat = defaultLat;
+  liveWeatherState.lon = defaultLon;
+  liveWeatherState.placeName = defaultPlace;
+
+  try {
+    localStorage.setItem('farmer_weather_lat', defaultLat);
+    localStorage.setItem('farmer_weather_lon', defaultLon);
+    localStorage.setItem('farmer_weather_place', defaultPlace);
+  } catch (_) {}
+
+  updateWeatherLocationUI(defaultPlace);
+  fetchOpenMeteoWeather(defaultLat, defaultLon);
+}
+
+async function reverseGeocode(lat, lon) {
+  try {
+    const url = `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("Reverse geocode HTTP " + res.status);
+    const json = await res.json();
+
+    const parts = [];
+    if (json.city) parts.push(json.city);
+    else if (json.locality) parts.push(json.locality);
+
+    if (json.principalSubdivision) parts.push(json.principalSubdivision);
+    else if (json.countryName) parts.push(json.countryName);
+
+    const place = parts.length > 0 ? parts.join(', ') : `${lat.toFixed(2)}°, ${lon.toFixed(2)}°`;
+    liveWeatherState.placeName = place;
+
+    try {
+      localStorage.setItem('farmer_weather_place', place);
+    } catch (_) {}
+
+    updateWeatherLocationUI(place);
+  } catch (e) {
+    const cached = localStorage.getItem('farmer_weather_place');
+    const place = cached || `${lat.toFixed(2)}°N, ${lon.toFixed(2)}°E`;
+    liveWeatherState.placeName = place;
+    updateWeatherLocationUI(place);
+  }
+}
+
+function updateWeatherLocationUI(placeName) {
+  const el = $('weatherPlaceName');
+  if (el) el.textContent = placeName || 'Current Location';
+}
+
+function extractCurrentHourRainProbability(hourly) {
+  if (!hourly || !hourly.time || !hourly.precipitation_probability) return 0;
+  const now = new Date();
+  let closestIdx = 0;
+  let minDiff = Infinity;
+
+  for (let i = 0; i < hourly.time.length; i++) {
+    const t = new Date(hourly.time[i]);
+    const diff = Math.abs(t.getTime() - now.getTime());
+    if (diff < minDiff) {
+      minDiff = diff;
+      closestIdx = i;
+    }
+  }
+
+  const prob = hourly.precipitation_probability[closestIdx];
+  return typeof prob === 'number' ? Math.round(prob) : 0;
+}
+
+async function fetchOpenMeteoWeather(lat, lon, isManualClick = false) {
+  const refreshBtn = $('weatherRefreshBtn');
+  if (refreshBtn) refreshBtn.classList.add('spinning');
+
+  try {
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&hourly=precipitation_probability&daily=temperature_2m_max,temperature_2m_min&timezone=auto`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`Open-Meteo HTTP error: ${res.status}`);
+    const json = await res.json();
+
+    if (!json || !json.current) throw new Error("Invalid Open-Meteo forecast payload");
+
+    liveWeatherState.data = json;
+    liveWeatherState.lastFetchTime = new Date();
+    liveWeatherState.isStale = false;
+
+    renderLiveWeatherUI(json);
+  } catch (err) {
+    console.warn("[Weather] Fetch error:", err);
+    if (liveWeatherState.data) {
+      // Mark as stale but preserve previous readings
+      liveWeatherState.isStale = true;
+      const staleBadge = $('weatherStaleBadge');
+      if (staleBadge) staleBadge.style.display = 'inline-block';
+    } else {
+      showWeatherNotice(
+        "Weather Service Offline",
+        "Could not retrieve live weather from Open-Meteo. Please check your internet connection.",
+        true
+      );
+    }
+  } finally {
+    if (refreshBtn) {
+      setTimeout(() => refreshBtn.classList.remove('spinning'), 600);
+    }
+  }
+}
+
+function renderLiveWeatherUI(json) {
+  const current = json.current || {};
+  const daily = json.daily || {};
+  const hourly = json.hourly || {};
+
+  const temp = Math.round(current.temperature_2m ?? 0);
+  const wCode = current.weather_code ?? 0;
+  const wInfo = WMO_WEATHER_CODES[wCode] || { label: "Fair Weather", icon: "🌤️" };
+  const humidity = Math.round(current.relative_humidity_2m ?? 0);
+  const windSpeed = Math.round(current.wind_speed_10m ?? 0);
+  const rainProb = extractCurrentHourRainProbability(hourly);
+
+  const maxTemp = (daily.temperature_2m_max && daily.temperature_2m_max.length)
+    ? Math.round(daily.temperature_2m_max[0])
+    : temp;
+  const minTemp = (daily.temperature_2m_min && daily.temperature_2m_min.length)
+    ? Math.round(daily.temperature_2m_min[0])
+    : temp;
+
+  const now = liveWeatherState.lastFetchTime || new Date();
+  const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+  // Update DOM elements
+  const elTemp = $('weatherTemp');
+  const elCond = $('weatherCondition');
+  const elGraphic = $('weatherGraphic');
+  const elMax = $('weatherTempMax');
+  const elMin = $('weatherTempMin');
+  const elRainProb = $('weatherRainProb');
+  const elRainStrip = $('weatherRainStrip');
+  const elHumidity = $('weatherHumidity');
+  const elWind = $('weatherWind');
+  const elUpdated = $('weatherLastUpdated');
+  const staleBadge = $('weatherStaleBadge');
+
+  if (elTemp) elTemp.textContent = temp;
+  if (elCond) elCond.textContent = wInfo.label;
+  if (elGraphic) elGraphic.textContent = wInfo.icon;
+  if (elMax) elMax.textContent = `${maxTemp}°C`;
+  if (elMin) elMin.textContent = `${minTemp}°C`;
+  if (elRainProb) elRainProb.textContent = `${rainProb}%`;
+  if (elRainStrip) elRainStrip.textContent = `${rainProb}%`;
+  if (elHumidity) elHumidity.textContent = `${humidity}%`;
+  if (elWind) elWind.textContent = `${windSpeed} km/h`;
+  if (elUpdated) elUpdated.textContent = timeStr;
+  if (staleBadge) staleBadge.style.display = liveWeatherState.isStale ? 'inline-block' : 'none';
+
+  // Toggle Visibility
+  const loadingEl = $('weatherLoading');
+  const mainGrid = $('weatherMainGrid');
+  const stripEl = $('weatherMetricsStrip');
+  const noticeEl = $('weatherNotice');
+
+  if (loadingEl) loadingEl.style.display = 'none';
+  if (noticeEl) noticeEl.style.display = 'none';
+  if (mainGrid) mainGrid.style.display = 'grid';
+  if (stripEl) stripEl.style.display = 'grid';
+}
+
+function showWeatherNotice(title, text, showActions = false) {
+  const loadingEl = $('weatherLoading');
+  const mainGrid = $('weatherMainGrid');
+  const stripEl = $('weatherMetricsStrip');
+  const noticeEl = $('weatherNotice');
+  const titleEl = $('weatherNoticeTitle');
+  const textEl = $('weatherNoticeText');
+
+  if (loadingEl) loadingEl.style.display = 'none';
+  if (titleEl) titleEl.textContent = title;
+  if (textEl) textEl.textContent = text;
+
+  if (noticeEl) noticeEl.style.display = 'flex';
+  if (mainGrid && !liveWeatherState.data) mainGrid.style.display = 'none';
+  if (stripEl && !liveWeatherState.data) stripEl.style.display = 'none';
+}
+
+
+// ============================================================
 // BUTTON WIRING
 // ============================================================
 
@@ -3140,6 +3479,7 @@ buildCropLibrary();
 buildProblems();
 setupCalculator();
 buildNutrientCare();
+initLiveWeather();
 setStatus('idle');
 
 if (!navigator.bluetooth) {
