@@ -54,7 +54,8 @@ const CROP_ICONS = {
   "Bhendi": "🥒",
   "Sugarcane": "🎋",
   "Mango": "🥭",
-  "Coconut": "🥥"
+  "Coconut": "🥥",
+  "Banana": "🍌"
 };
 
 function getCropIcon(name) {
@@ -820,6 +821,53 @@ const CROPS = {
       "AND OCT-NOV"
     ],
     "SeedRate_1Acre": 70.0
+  },
+  "Banana": {
+    "Season": [
+      "ALL YEAR ROUND (PERENNIAL)",
+      "MAIN PLANTING: FEB-APR & AUG-OCT"
+    ],
+    "Type": [
+      "PERENNIAL FRUIT CROP"
+    ],
+    "SowingMonths": [1, 2, 3, 4, 5, 8, 9, 10, 11],
+    "WaterReq_L": 7250000,
+    "WaterDepth_mm": 1800,
+    "Duration": "11 - 14 MONTHS",
+    "Irrigation": "15-20 LITRES/PLANT/DAY VIA DRIP, REGULAR MOISTURE AT BUNCH INITIATION",
+    "Soil": "RICH WELL-DRAINED LOAM, ALLUVIAL, CLAY LOAM PH 6.5-7.5",
+    "Problems": [
+      "PANAMA WILT",
+      "BANANA BUNCHY TOP VIRUS",
+      "RHIZOME WEEVIL",
+      "SIGATOKA LEAF SPOT"
+    ],
+    "Organic Care": [
+      "PSEUDOMONAS DIP FOR SUCKERS",
+      "NEEM CAKE IN PLANTING PITS",
+      "TRICHODERMA VIRIDE APPLICATION",
+      "REMOVAL OF DISEASED LEAVES"
+    ],
+    "Prevention": [
+      "USE DISEASE-FREE TISSUE CULTURE PLANTS",
+      "AVOID WATER STAGNATION",
+      "TIMELY DESUCKERING",
+      "CLEAN DRAINAGE CHANNELS"
+    ],
+    "Spray Info": [
+      "NEEM OIL 3 ML/L FOR APHID VECTORS",
+      "MINERAL OIL FOR SIGATOKA CONTROL"
+    ],
+    "Tree Info": [
+      "SPACING: 1.8x1.8 METRES",
+      "1,210 PLANTS PER ACRE",
+      "PIT SIZE: 0.5x0.5x0.5 METRE"
+    ],
+    "Months": [
+      "PLANTING: FEB-APR",
+      "AND AUG-OCT"
+    ],
+    "SeedRate_1Acre": 1210.0
   }
 };
 
@@ -1465,8 +1513,612 @@ function buildProblems() {
 }
 
 // ============================================================
-// SEED RATE & 1-ACRE POND WATER CALCULATOR TAB
+// TAB 5: INTELLIGENT CROP-SPECIFIC SEED & PLANTING CALCULATOR
 // ============================================================
+
+const CALC_CONFIG = {
+  "Paddy": {
+    name: "Paddy",
+    icon: "🌾",
+    category: "weight",
+    categoryLabel: "Seed Weight Calculation",
+    badgeClass: "badge-weight",
+    defaultMethod: "transplanted",
+    methods: {
+      "transplanted": {
+        label: "Transplanted Paddy (Standard Nursery)",
+        rate: 20,
+        unit: "kg",
+        unitDisplay: "kg seeds",
+        rateDisplay: "20 kg / acre",
+        spacing: "20 × 10 cm (or 15 × 10 cm)",
+        formula: "Land Area (Acres) × 20 kg/acre",
+        tip: "Standard recommendation for Kuruvai / Samba seasons. Keep 5% extra seed for nursery border and gap filling at 10–14 days after transplanting."
+      },
+      "direct_broadcast": {
+        label: "Direct Sown / Broadcast (Wetland / Dryland)",
+        rate: 40,
+        unit: "kg",
+        unitDisplay: "kg seeds",
+        rateDisplay: "40 kg / acre",
+        spacing: "Broadcasting / Solid drill",
+        formula: "Land Area (Acres) × 40 kg/acre",
+        tip: "Higher seed rate compensates for bird damage, deeper burial, and uneven emergence in direct-seeded rice (DSR)."
+      },
+      "sri": {
+        label: "System of Rice Intensification (SRI — Single Seedling)",
+        rate: 2.5,
+        unit: "kg",
+        unitDisplay: "kg seeds",
+        rateDisplay: "2.5 kg / acre",
+        spacing: "25 × 25 cm (Square Planting)",
+        formula: "Land Area (Acres) × 2.5 kg/acre",
+        tip: "Uses very low seed rate. Single 14-day-old young seedling per hill with rotary cono-weeding for massive tillering."
+      }
+    }
+  },
+  "Coconut": {
+    name: "Coconut",
+    icon: "🥥",
+    category: "population",
+    categoryLabel: "Tree Population Calculation",
+    badgeClass: "badge-trees",
+    defaultMethod: "square_75",
+    methods: {
+      "square_75": {
+        label: "Standard Square Planting (7.5m × 7.5m / 25ft × 25ft)",
+        rate: 70,
+        unit: "trees",
+        unitDisplay: "seedlings / trees",
+        rateDisplay: "70 palms / acre",
+        spacing: "7.5 × 7.5 metres (25 × 25 ft)",
+        formula: "Land Area (Acres) × 70 palms/acre (rounded to whole tree)",
+        isCount: true,
+        tip: "TNAU standard recommendation for tall & hybrid varieties. Dig 1m × 1m × 1m pits 2 months before planting with 25 kg FYM and 1 kg neem cake."
+      },
+      "square_80": {
+        label: "Wider Spacing (8.0m × 8.0m / 26ft × 26ft)",
+        rate: 64,
+        unit: "trees",
+        unitDisplay: "seedlings / trees",
+        rateDisplay: "64 palms / acre",
+        spacing: "8.0 × 8.0 metres (26 × 26 ft)",
+        formula: "Land Area (Acres) × 64 palms/acre (rounded to whole tree)",
+        isCount: true,
+        tip: "Ideal for fertile soils and multi-tier intercropping systems with cocoa, banana, or pepper."
+      },
+      "triangular_75": {
+        label: "Triangular System (7.5m Equilateral)",
+        rate: 80,
+        unit: "trees",
+        unitDisplay: "seedlings / trees",
+        rateDisplay: "80 palms / acre",
+        spacing: "7.5m equilateral triangle",
+        formula: "Land Area (Acres) × 80 palms/acre (rounded to whole tree)",
+        isCount: true,
+        tip: "Triangular planting accommodates ~15% more trees per acre while maintaining equal canopy sunlight access."
+      },
+      "dwarf_high_density": {
+        label: "High Density / Dwarf Cultivars (6.0m × 6.0m)",
+        rate: 110,
+        unit: "trees",
+        unitDisplay: "seedlings / trees",
+        rateDisplay: "110 palms / acre",
+        spacing: "6.0 × 6.0 metres (20 × 20 ft)",
+        formula: "Land Area (Acres) × 110 palms/acre (rounded to whole tree)",
+        isCount: true,
+        tip: "Suitable exclusively for tender-nut dwarf cultivars like Chowghat Orange Dwarf (COD)."
+      }
+    }
+  },
+  "Banana": {
+    name: "Banana",
+    icon: "🍌",
+    category: "planting_material",
+    categoryLabel: "Planting Material (Suckers / Tissue Culture)",
+    badgeClass: "badge-suckers",
+    defaultMethod: "standard_18",
+    methods: {
+      "standard_18": {
+        label: "Standard Spacing (1.8m × 1.8m / 6ft × 6ft)",
+        rate: 1210,
+        unit: "suckers",
+        unitDisplay: "suckers / plantlets",
+        rateDisplay: "1,210 suckers / acre",
+        spacing: "1.8 × 1.8 metres (6 × 6 ft)",
+        formula: "Land Area (Acres) × 1,210 suckers/acre (rounded to whole sucker)",
+        isCount: true,
+        tip: "NRCB / TNAU standard for Cavendish (Grand Naine), Robusta, Poovan, and Rasthali. Select healthy sword suckers weighing 1.5–2.0 kg or secondary-hardened tissue culture plants."
+      },
+      "high_density_15": {
+        label: "High Density Planting (1.5m × 1.5m / 5ft × 5ft)",
+        rate: 1800,
+        unit: "suckers",
+        unitDisplay: "suckers / plantlets",
+        rateDisplay: "1,800 suckers / acre",
+        spacing: "1.5 × 1.5 metres (5 × 5 ft)",
+        formula: "Land Area (Acres) × 1,800 suckers/acre (rounded to whole sucker)",
+        isCount: true,
+        tip: "Recommended for Dwarf Cavendish and tissue culture plantlets under precision drip fertigation."
+      },
+      "paired_row": {
+        label: "Paired Row System (1.2m × 1.2m in pairs with 2.0m inter-pair alley)",
+        rate: 1400,
+        unit: "suckers",
+        unitDisplay: "suckers / plantlets",
+        rateDisplay: "1,400 suckers / acre",
+        spacing: "1.2 × 1.2 × 2.0 metres",
+        formula: "Land Area (Acres) × 1,400 suckers/acre (rounded to whole sucker)",
+        isCount: true,
+        tip: "Allows easy tractor movement, drip line installation, bunch harvest, and inter-crop management between paired rows."
+      }
+    }
+  },
+  "Tomato": {
+    name: "Tomato",
+    icon: "🍅",
+    category: "seedling",
+    categoryLabel: "Seedling / Seed Requirement",
+    badgeClass: "badge-seedling",
+    defaultMethod: "seedlings_hybrid",
+    methods: {
+      "seedlings_hybrid": {
+        label: "Transplanted Seedlings (Determinate / Commercial Hybrids)",
+        rate: 9000,
+        unit: "seedlings",
+        unitDisplay: "seedlings",
+        rateDisplay: "9,000 seedlings / acre",
+        spacing: "60 × 60 cm (or 90 × 45 cm)",
+        formula: "Land Area (Acres) × 9,000 seedlings/acre (rounded to whole seedling)",
+        isCount: true,
+        tip: "Includes a 10% nursery buffer for gap filling. Seedlings ready at 25–30 days when raised in 98-cell pro-trays using coco-peat."
+      },
+      "seedlings_staked": {
+        label: "Transplanted Seedlings (Indeterminate / Staked Trellis)",
+        rate: 6000,
+        unit: "seedlings",
+        unitDisplay: "seedlings",
+        rateDisplay: "6,000 seedlings / acre",
+        spacing: "90 × 60 cm (3 × 2 ft)",
+        formula: "Land Area (Acres) × 6,000 seedlings/acre (rounded to whole seedling)",
+        isCount: true,
+        tip: "Wider spacing for continuous fruiting staked varieties with trellising wires and bilateral staking."
+      },
+      "seeds_nursery_hybrid": {
+        label: "F1 Hybrid Seeds for Nursery Raising (Weight)",
+        rate: 0.15,
+        unit: "grams",
+        unitDisplay: "grams seed (0.15 kg)",
+        rateDisplay: "150 grams (0.15 kg) / acre",
+        spacing: "Raised beds / Pro-tray nursery",
+        formula: "Land Area (Acres) × 150 grams/acre",
+        isGrams: true,
+        tip: "Cost-effective high-germination F1 seeds (approx. 300–350 seeds/gram). Raise in pro-trays under 50% shade net."
+      },
+      "seeds_nursery_op": {
+        label: "Open-Pollinated (OP) Varieties Seed Weight",
+        rate: 0.20,
+        unit: "grams",
+        unitDisplay: "grams seed (0.20 kg)",
+        rateDisplay: "200 grams (0.20 kg) / acre",
+        spacing: "Raised beds nursery",
+        formula: "Land Area (Acres) × 200 grams/acre",
+        isGrams: true,
+        tip: "Standard recommendation for traditional OP varieties like PKM-1 or CO-3."
+      }
+    }
+  },
+  "Chilli": {
+    name: "Chilli",
+    icon: "🌶️",
+    category: "seedling",
+    categoryLabel: "Seedling / Seed Requirement",
+    badgeClass: "badge-seedling",
+    defaultMethod: "seedlings",
+    methods: {
+      "seedlings": {
+        label: "Transplanted Seedlings (Standard Field Planting)",
+        rate: 11000,
+        unit: "seedlings",
+        unitDisplay: "seedlings",
+        rateDisplay: "11,000 seedlings / acre",
+        spacing: "60 × 45 cm (2 × 1.5 ft)",
+        formula: "Land Area (Acres) × 11,000 seedlings/acre (rounded to whole seedling)",
+        isCount: true,
+        tip: "Includes 10% buffer. Dip seedling roots in Pseudomonas fluorescens (10g/L) for 30 minutes before planting."
+      },
+      "seeds_nursery": {
+        label: "Nursery Seed Weight",
+        rate: 0.40,
+        unit: "grams",
+        unitDisplay: "grams seed (0.40 kg)",
+        rateDisplay: "400 grams (0.40 kg) / acre",
+        spacing: "Raised nursery beds",
+        formula: "Land Area (Acres) × 400 grams/acre",
+        isGrams: true,
+        tip: "Sow seeds on raised beds treated with Trichoderma seed treatment to prevent damping-off."
+      }
+    }
+  },
+  "Brinjal": {
+    name: "Brinjal",
+    icon: "🍆",
+    category: "seedling",
+    categoryLabel: "Seedling / Seed Requirement",
+    badgeClass: "badge-seedling",
+    defaultMethod: "seedlings",
+    methods: {
+      "seedlings": {
+        label: "Transplanted Seedlings (Hybrids / Varieties)",
+        rate: 8500,
+        unit: "seedlings",
+        unitDisplay: "seedlings",
+        rateDisplay: "8,500 seedlings / acre",
+        spacing: "75 × 60 cm (2.5 × 2 ft)",
+        formula: "Land Area (Acres) × 8,500 seedlings/acre (rounded to whole seedling)",
+        isCount: true,
+        tip: "Plant 30–35 day old seedlings. Ridge and furrow planting ensures good root aeration."
+      },
+      "seeds_nursery": {
+        label: "Nursery Seed Weight",
+        rate: 0.20,
+        unit: "grams",
+        unitDisplay: "grams seed (0.20 kg)",
+        rateDisplay: "200 grams (0.20 kg) / acre",
+        spacing: "Raised nursery beds",
+        formula: "Land Area (Acres) × 200 grams/acre",
+        isGrams: true,
+        tip: "High germination rate seeds require ~200g per acre of main field."
+      }
+    }
+  },
+  "Onion": {
+    name: "Onion",
+    icon: "🧅",
+    category: "seedling",
+    categoryLabel: "Seedlings / Bulbs / Seeds",
+    badgeClass: "badge-seedling",
+    defaultMethod: "seedlings",
+    methods: {
+      "seedlings": {
+        label: "Transplanted Seedlings (Bellary / Big Onion)",
+        rate: 180000,
+        unit: "seedlings",
+        unitDisplay: "seedlings",
+        rateDisplay: "180,000 seedlings / acre",
+        spacing: "15 × 10 cm on flat beds or broad beds",
+        formula: "Land Area (Acres) × 180,000 seedlings/acre (rounded to whole seedling)",
+        isCount: true,
+        tip: "Transplant 40–45 day old healthy seedlings on raised broad bed furrows (BBF) for optimal bulb expansion."
+      },
+      "bulb_setts": {
+        label: "Small Bulb Setts (Aggregatum / Small Shallots)",
+        rate: 450,
+        unit: "kg",
+        unitDisplay: "kg small bulbs (setts)",
+        rateDisplay: "450 kg bulbs / acre",
+        spacing: "15 × 10 cm",
+        formula: "Land Area (Acres) × 450 kg bulbs/acre",
+        tip: "Traditional method for CO-4 and CO-5 small onions. Select medium-sized 10–15g disease-free mother bulbs."
+      },
+      "seeds_nursery": {
+        label: "Nursery Seed Weight (for raising seedlings)",
+        rate: 4.0,
+        unit: "kg",
+        unitDisplay: "kg seeds",
+        rateDisplay: "4.0 kg seeds / acre",
+        spacing: "Raised beds",
+        formula: "Land Area (Acres) × 4.0 kg/acre",
+        tip: "Requires ~0.05 acre nursery area per 1 acre of main transplanted field."
+      }
+    }
+  },
+  "Groundnut": {
+    name: "Groundnut",
+    icon: "🥜",
+    category: "weight",
+    categoryLabel: "Seed Weight Calculation",
+    badgeClass: "badge-weight",
+    defaultMethod: "bunch",
+    methods: {
+      "bunch": {
+        label: "Bunch Varieties (TMV 7, VRI 2, Kadiri — Irrigated / Rainfed)",
+        rate: 55,
+        unit: "kg",
+        unitDisplay: "kg seed kernels",
+        rateDisplay: "55 kg kernels / acre",
+        spacing: "30 × 10 cm (~133,000 plants/acre)",
+        formula: "Land Area (Acres) × 55 kg kernels/acre",
+        tip: "Treat kernels with Trichoderma viride @ 4g/kg seed + Rhizobium culture before sowing."
+      },
+      "spreading": {
+        label: "Semi-Spreading Varieties",
+        rate: 50,
+        unit: "kg",
+        unitDisplay: "kg seed kernels",
+        rateDisplay: "50 kg kernels / acre",
+        spacing: "30 × 15 cm",
+        formula: "Land Area (Acres) × 50 kg kernels/acre",
+        tip: "Slightly wider spacing accommodates lateral branch spreading and peg penetration."
+      }
+    }
+  },
+  "Black Gram": {
+    name: "Black Gram",
+    icon: "🫘",
+    category: "weight",
+    categoryLabel: "Seed Weight Calculation",
+    badgeClass: "badge-weight",
+    defaultMethod: "pure",
+    methods: {
+      "pure": {
+        label: "Pure / Irrigated Crop (VBN 6, 8, CO 6)",
+        rate: 8,
+        unit: "kg",
+        unitDisplay: "kg seeds",
+        rateDisplay: "8 kg / acre",
+        spacing: "30 × 10 cm",
+        formula: "Land Area (Acres) × 8 kg/acre",
+        tip: "Sow at 2–3 cm depth. Inoculate with Rhizobium and phosphobacteria biofertilizers."
+      },
+      "rice_fallow": {
+        label: "Rice Fallow Broadcast (Sown into standing paddy 7–10 days before harvest)",
+        rate: 12,
+        unit: "kg",
+        unitDisplay: "kg seeds",
+        rateDisplay: "12 kg / acre",
+        spacing: "Broadcast in paddy stubbles",
+        formula: "Land Area (Acres) × 12 kg/acre",
+        tip: "Higher rate ensures adequate plant stand in unploughed paddy stubble soil."
+      }
+    }
+  },
+  "Green Gram": {
+    name: "Green Gram",
+    icon: "🫛",
+    category: "weight",
+    categoryLabel: "Seed Weight Calculation",
+    badgeClass: "badge-weight",
+    defaultMethod: "pure",
+    methods: {
+      "pure": {
+        label: "Pure / Irrigated Crop",
+        rate: 8,
+        unit: "kg",
+        unitDisplay: "kg seeds",
+        rateDisplay: "8 kg / acre",
+        spacing: "30 × 10 cm",
+        formula: "Land Area (Acres) × 8 kg/acre",
+        tip: "Inoculate with Rhizobium and phosphobacteria for optimal nitrogen nodulation."
+      },
+      "rice_fallow": {
+        label: "Rice Fallow Pulse",
+        rate: 12,
+        unit: "kg",
+        unitDisplay: "kg seeds",
+        rateDisplay: "12 kg / acre",
+        spacing: "Broadcast in paddy stubbles",
+        formula: "Land Area (Acres) × 12 kg/acre",
+        tip: "Broadcast when field has waxy moisture before paddy harvest."
+      }
+    }
+  },
+  "Maize": {
+    name: "Maize",
+    icon: "🌽",
+    category: "weight",
+    categoryLabel: "Seed Weight Calculation",
+    badgeClass: "badge-weight",
+    defaultMethod: "hybrid",
+    methods: {
+      "hybrid": {
+        label: "Grain Hybrid Maize (Single Cross Hybrids)",
+        rate: 8,
+        unit: "kg",
+        unitDisplay: "kg seeds",
+        rateDisplay: "8 kg / acre",
+        spacing: "60 × 20 cm (~33,000 plants/acre)",
+        formula: "Land Area (Acres) × 8 kg/acre",
+        tip: "One seed per hill at 4–5 cm depth. Avoid planting two seeds to prevent nutrient competition."
+      },
+      "sweet_baby_corn": {
+        label: "Sweet Corn / Baby Corn",
+        rate: 10,
+        unit: "kg",
+        unitDisplay: "kg seeds",
+        rateDisplay: "10 kg / acre",
+        spacing: "45 × 20 cm (higher plant density)",
+        formula: "Land Area (Acres) × 10 kg/acre",
+        tip: "Closer planting density yields tender, uniform baby corn ears."
+      }
+    }
+  },
+  "Ragi": {
+    name: "Ragi",
+    icon: "🌾",
+    category: "weight",
+    categoryLabel: "Seed Weight Calculation",
+    badgeClass: "badge-weight",
+    defaultMethod: "transplanted",
+    methods: {
+      "transplanted": {
+        label: "Transplanted Ragi (Nursery Raised)",
+        rate: 2,
+        unit: "kg",
+        unitDisplay: "kg seeds",
+        rateDisplay: "2 kg / acre (Nursery)",
+        spacing: "22.5 × 10 cm (2 seedlings/hill)",
+        formula: "Land Area (Acres) × 2 kg/acre",
+        tip: "2 kg seed in 1.5 cents nursery yields enough seedlings for 1 acre of main field."
+      },
+      "direct": {
+        label: "Direct Line Sown / Broadcast",
+        rate: 5,
+        unit: "kg",
+        unitDisplay: "kg seeds",
+        rateDisplay: "5 kg / acre",
+        spacing: "Line sowing at 22.5 × 10 cm",
+        formula: "Land Area (Acres) × 5 kg/acre",
+        tip: "Direct seeding requires thinning at 15–20 DAS to maintain proper plant population."
+      }
+    }
+  },
+  "Cotton": {
+    name: "Cotton",
+    icon: "☁️",
+    category: "weight",
+    categoryLabel: "Seed Weight Calculation",
+    badgeClass: "badge-weight",
+    defaultMethod: "bt_hybrid",
+    methods: {
+      "bt_hybrid": {
+        label: "Bt Cotton Hybrids (Standard Spacing 90 × 60 cm)",
+        rate: 1.5,
+        unit: "kg",
+        unitDisplay: "kg seeds (~6,500 seeds)",
+        rateDisplay: "1.5 kg / acre (or ~6,000 seeds)",
+        spacing: "90 × 60 cm (3 × 2 ft = ~7,400 plants/acre)",
+        formula: "Land Area (Acres) × 1.5 kg/acre",
+        tip: "One seed per hill. Gap filling must be completed within 10 days of germination."
+      },
+      "high_density": {
+        label: "High Density Planting System (HDPS — 60 × 15 cm)",
+        rate: 4.0,
+        unit: "kg",
+        unitDisplay: "kg seeds",
+        rateDisplay: "4.0 kg / acre",
+        spacing: "60 × 15 cm (~44,000 plants/acre)",
+        formula: "Land Area (Acres) × 4.0 kg/acre",
+        tip: "HDPS compact varieties under rainfed conditions maximize early boll formation."
+      }
+    }
+  },
+  "Sesame": {
+    name: "Sesame",
+    icon: "🫘",
+    category: "weight",
+    categoryLabel: "Seed Weight Calculation",
+    badgeClass: "badge-weight",
+    defaultMethod: "standard",
+    methods: {
+      "standard": {
+        label: "Pure Sown Crop (TMV 3, 7, VRI 1, 2)",
+        rate: 2,
+        unit: "kg",
+        unitDisplay: "kg seeds",
+        rateDisplay: "2 kg / acre",
+        spacing: "30 × 30 cm",
+        formula: "Land Area (Acres) × 2 kg/acre",
+        tip: "Mix seed with dry sand (1:4 ratio) for uniform broadcast distribution of tiny seeds."
+      }
+    }
+  },
+  "Bhendi": {
+    name: "Bhendi",
+    icon: "🥒",
+    category: "weight",
+    categoryLabel: "Seed Weight Calculation",
+    badgeClass: "badge-weight",
+    defaultMethod: "hybrid",
+    methods: {
+      "hybrid": {
+        label: "Kharif / Monsoon Season (Hybrids)",
+        rate: 3,
+        unit: "kg",
+        unitDisplay: "kg seeds",
+        rateDisplay: "3 kg / acre",
+        spacing: "45 × 30 cm (~29,600 plants/acre)",
+        formula: "Land Area (Acres) × 3 kg/acre",
+        tip: "Soak seeds in water for 12 hours before sowing for uniform rapid germination."
+      },
+      "summer": {
+        label: "Summer Season (Higher Density)",
+        rate: 4,
+        unit: "kg",
+        unitDisplay: "kg seeds",
+        rateDisplay: "4 kg / acre",
+        spacing: "30 × 30 cm",
+        formula: "Land Area (Acres) × 4 kg/acre",
+        tip: "Closer planting in summer reduces evaporation and maintains soil moisture canopy."
+      }
+    }
+  },
+  "Sugarcane": {
+    name: "Sugarcane",
+    icon: "🎋",
+    category: "planting_material",
+    categoryLabel: "Planting Material (Setts)",
+    badgeClass: "badge-suckers",
+    defaultMethod: "two_bud",
+    methods: {
+      "two_bud": {
+        label: "Two-Budded Setts (Standard Ridge & Furrow)",
+        rate: 30000,
+        unit: "setts",
+        unitDisplay: "two-budded setts",
+        rateDisplay: "30,000 setts / acre (~75,000 buds)",
+        spacing: "90 cm or 120 cm furrows",
+        formula: "Land Area (Acres) × 30,000 setts/acre (rounded to whole sett)",
+        isCount: true,
+        tip: "Select 7–8 month old disease-free seed crop. Dip setts in Carbendazim solution before planting."
+      },
+      "single_bud_stp": {
+        label: "Single-Bud Setts / Sustainable Sugarcane Initiative (SSI)",
+        rate: 15000,
+        unit: "setts",
+        unitDisplay: "single-bud setts / chip buds",
+        rateDisplay: "15,000 setts / acre",
+        spacing: "150 cm wide furrows",
+        formula: "Land Area (Acres) × 15,000 setts/acre (rounded to whole sett)",
+        isCount: true,
+        tip: "Chip-bud technology saves 75% seed cane by weight and gives profuse tillering."
+      }
+    }
+  },
+  "Mango": {
+    name: "Mango",
+    icon: "🥭",
+    category: "population",
+    categoryLabel: "Tree Population Calculation",
+    badgeClass: "badge-trees",
+    defaultMethod: "standard_10",
+    methods: {
+      "standard_10": {
+        label: "Standard Spacing (10m × 10m / 33ft × 33ft)",
+        rate: 40,
+        unit: "trees",
+        unitDisplay: "trees (grafts)",
+        rateDisplay: "40 trees / acre",
+        spacing: "10 × 10 metres (Square system)",
+        formula: "Land Area (Acres) × 40 trees/acre (rounded to whole tree)",
+        isCount: true,
+        tip: "Traditional spacing for Alphonso, Banganapalli, Neelum. Dig 1m × 1m × 1m pits with 50 kg compost."
+      },
+      "medium_75": {
+        label: "Medium Density (7.5m × 7.5m)",
+        rate: 70,
+        unit: "trees",
+        unitDisplay: "trees (grafts)",
+        rateDisplay: "70 trees / acre",
+        spacing: "7.5 × 7.5 metres",
+        formula: "Land Area (Acres) × 70 trees/acre (rounded to whole tree)",
+        isCount: true,
+        tip: "Suitable for regular-bearing dwarf varieties like Amrapali or Mallika."
+      },
+      "ultra_high_density": {
+        label: "High Density Planting (HDP — 5m × 5m)",
+        rate: 160,
+        unit: "trees",
+        unitDisplay: "trees (grafts)",
+        rateDisplay: "160 trees / acre",
+        spacing: "5 × 5 metres",
+        formula: "Land Area (Acres) × 160 trees/acre (rounded to whole tree)",
+        isCount: true,
+        tip: "Requires annual post-harvest canopy pruning and drip fertigation."
+      }
+    }
+  }
+};
 
 function updateCalculatorCropList() {
   const sel = $('calcCrop');
@@ -1474,22 +2126,26 @@ function updateCalculatorCropList() {
   const currentVal = sel.value;
   sel.innerHTML = '<option value="" disabled>Select crop…</option>';
 
-  const allNames = Object.keys(CROPS);
+  const allNames = Object.keys(CALC_CONFIG);
 
   if (pondTelemetry.recCrops.length > 0) {
     const optGroupRec = document.createElement('optgroup');
-    optGroupRec.label = '🌱 Eligible Crops for Selected Mode';
+    optGroupRec.label = '🌱 Eligible Crops for Selected Pond Mode';
     pondTelemetry.recCrops.forEach(name => {
-      const opt = document.createElement('option');
-      opt.value = name;
-      opt.textContent = `${getCropIcon(name)} ${name}`;
-      optGroupRec.appendChild(opt);
+      if (CALC_CONFIG[name]) {
+        const opt = document.createElement('option');
+        opt.value = name;
+        opt.textContent = `${getCropIcon(name)} ${name}`;
+        optGroupRec.appendChild(opt);
+      }
     });
-    sel.appendChild(optGroupRec);
+    if (optGroupRec.children.length > 0) {
+      sel.appendChild(optGroupRec);
+    }
   }
 
   const optGroupAll = document.createElement('optgroup');
-  optGroupAll.label = 'All 16 Crops';
+  optGroupAll.label = `All Supported Crops (${allNames.length})`;
   allNames.forEach(name => {
     const opt = document.createElement('option');
     opt.value = name;
@@ -1500,84 +2156,327 @@ function updateCalculatorCropList() {
 
   if (currentVal && allNames.includes(currentVal)) {
     sel.value = currentVal;
-  } else if (pondTelemetry.recCrops.length > 0) {
+  } else if (pondTelemetry.recCrops.length > 0 && CALC_CONFIG[pondTelemetry.recCrops[0]]) {
     sel.value = pondTelemetry.recCrops[0];
   } else {
     sel.value = 'Paddy';
   }
 
-  syncDefaultSeedRate();
+  syncCropCalculationUI();
 }
 
-function syncDefaultSeedRate() {
-  const sel = $('calcCrop');
-  const rateInput = $('calcRate');
-  if (!sel || !rateInput) return;
-  const crop = sel.value;
-  const cData = CROPS[crop];
-  if (cData && cData.SeedRate_1Acre) {
-    rateInput.value = cData.SeedRate_1Acre;
+function syncCropCalculationUI() {
+  const selCrop = $('calcCrop');
+  if (!selCrop) return;
+  const crop = selCrop.value || 'Paddy';
+  const cfg = CALC_CONFIG[crop];
+  if (!cfg) return;
+
+  // 1. Update Mode Badge
+  const badge = $('calcModeBadge');
+  if (badge) {
+    badge.className = `calc-badge-pill ${cfg.badgeClass}`;
+    badge.textContent = `${cfg.icon} ${cfg.categoryLabel}`;
   }
+
+  // 2. Update Cultivation Method Dropdown
+  const methodGroup = $('calcMethodGroup');
+  const selMethod = $('calcMethod');
+  const methodKeys = Object.keys(cfg.methods);
+
+  if (selMethod && methodGroup) {
+    if (methodKeys.length > 1) {
+      methodGroup.style.display = 'flex';
+      selMethod.innerHTML = '';
+      methodKeys.forEach(k => {
+        const m = cfg.methods[k];
+        const opt = document.createElement('option');
+        opt.value = k;
+        opt.textContent = `${m.label} (${m.rateDisplay})`;
+        selMethod.appendChild(opt);
+      });
+      selMethod.value = cfg.defaultMethod;
+    } else {
+      methodGroup.style.display = 'none';
+      selMethod.innerHTML = '';
+      const opt = document.createElement('option');
+      opt.value = cfg.defaultMethod;
+      opt.textContent = cfg.methods[cfg.defaultMethod].label;
+      selMethod.appendChild(opt);
+      selMethod.value = cfg.defaultMethod;
+    }
+  }
+
+  // 3. Update Custom Rate in Advanced Details
+  syncCustomRateField();
+
+  // 4. Update Crop Banner
+  updateCropBanner();
+}
+
+function updateCropBanner() {
+  const selCrop = $('calcCrop');
+  const selMethod = $('calcMethod');
+  const banner = $('calcCropBanner');
+  if (!selCrop || !banner) return;
+
+  const crop = selCrop.value || 'Paddy';
+  const cfg = CALC_CONFIG[crop];
+  if (!cfg) return;
+
+  const methodKey = selMethod ? selMethod.value : cfg.defaultMethod;
+  const m = cfg.methods[methodKey] || cfg.methods[cfg.defaultMethod];
+
+  banner.innerHTML = `
+    <div class="banner-title">${cfg.icon} ${cfg.name} &bull; ${cfg.categoryLabel}</div>
+    <div class="banner-details">
+      <span>📐 Standard Spacing: <strong>${esc(m.spacing)}</strong></span> &bull; 
+      <span>🌱 Recommended Rate: <strong>${esc(m.rateDisplay)}</strong></span>
+    </div>
+  `;
+}
+
+function syncCustomRateField() {
+  const selCrop = $('calcCrop');
+  const selMethod = $('calcMethod');
+  const customRateInput = $('calcCustomRate');
+  const customRateLabel = $('calcCustomRateLabel');
+  const customRateHint = $('calcCustomRateHint');
+
+  if (!selCrop || !customRateInput) return;
+  const crop = selCrop.value || 'Paddy';
+  const cfg = CALC_CONFIG[crop];
+  if (!cfg) return;
+
+  const methodKey = selMethod ? selMethod.value : cfg.defaultMethod;
+  const m = cfg.methods[methodKey] || cfg.methods[cfg.defaultMethod];
+
+  customRateInput.value = m.rate;
+
+  if (customRateLabel) {
+    customRateLabel.textContent = `Standard Recommendation (${m.unitDisplay} per acre):`;
+  }
+  if (customRateHint) {
+    customRateHint.textContent = `Default TNAU / ICAR standard is ${m.rateDisplay}. Edit only if following custom spacing.`;
+  }
+}
+
+function calculateSeedRequirement() {
+  const selCrop = $('calcCrop');
+  const selMethod = $('calcMethod');
+  const calcResult = $('calcResult');
+  const areaInput = $('calcArea');
+  const customRateInput = $('calcCustomRate');
+
+  if (!selCrop || !calcResult || !areaInput) return;
+
+  const crop = selCrop.value;
+  const cfg = CALC_CONFIG[crop];
+  if (!cfg) {
+    calcResult.innerHTML = '<div class="calc-error">⚠ Please select a valid crop.</div>';
+    return;
+  }
+
+  const area = parseFloat(areaInput.value);
+  if (isNaN(area) || area <= 0) {
+    calcResult.innerHTML = '<div class="calc-error">⚠ Please enter a valid field area greater than 0 (e.g. 0.5, 1.0, 2.0).</div>';
+    return;
+  }
+
+  const methodKey = (selMethod && selMethod.value) ? selMethod.value : cfg.defaultMethod;
+  const m = cfg.methods[methodKey] || cfg.methods[cfg.defaultMethod];
+
+  // Rate: Use custom rate if user actively modified it and valid, else use standard rate
+  let activeRate = m.rate;
+  if (customRateInput && !isNaN(parseFloat(customRateInput.value)) && parseFloat(customRateInput.value) > 0) {
+    activeRate = parseFloat(customRateInput.value);
+  }
+
+  let totalNumeric = 0;
+  let formattedTotal = '';
+  let unitText = '';
+  let formulaCalculationText = '';
+
+  if (m.isCount) {
+    // Trees, palms, seedlings, suckers, setts: rounded to nearest whole integer
+    totalNumeric = Math.round(area * activeRate);
+    formattedTotal = totalNumeric.toLocaleString();
+    unitText = m.unitDisplay;
+    formulaCalculationText = `${area} Acre × ${activeRate.toLocaleString()} / acre = ${totalNumeric.toLocaleString()} ${m.unit} (rounded to whole integer)`;
+  } else if (m.isGrams) {
+    // Nursery seeds in grams
+    totalNumeric = area * (activeRate * 1000); // grams
+    if (totalNumeric >= 1000) {
+      formattedTotal = (totalNumeric / 1000).toFixed(2);
+      unitText = 'kg seeds (' + Math.round(totalNumeric).toLocaleString() + ' g)';
+    } else {
+      formattedTotal = Math.round(totalNumeric).toLocaleString();
+      unitText = 'grams seed';
+    }
+    formulaCalculationText = `${area} Acre × ${(activeRate * 1000).toFixed(0)} grams/acre = ${formattedTotal} ${unitText}`;
+  } else {
+    // Weight in kg
+    totalNumeric = area * activeRate;
+    formattedTotal = (totalNumeric % 1 === 0) ? totalNumeric.toFixed(0) : totalNumeric.toFixed(2);
+    unitText = m.unitDisplay;
+    formulaCalculationText = `${area} Acre × ${activeRate} kg/acre = ${formattedTotal} kg`;
+  }
+
+  // Requirement Category Header Label
+  let requirementCategoryName = 'SEED';
+  if (cfg.category === 'population') {
+    requirementCategoryName = 'PLANTING / TREE';
+  } else if (cfg.category === 'planting_material') {
+    requirementCategoryName = 'PLANTING MATERIAL';
+  } else if (cfg.category === 'seedling') {
+    requirementCategoryName = m.isGrams ? 'NURSERY SEED' : 'SEEDLING';
+  }
+
+  // Preserve Farm Pond Telemetry integration & water demand calculation
+  let waterInfoHtml = '';
+  const cropData = CROPS[crop];
+  if (cropData && cropData.WaterReq_L) {
+    const cropLitres = cropData.WaterReq_L * area;
+    const cropM3 = (cropLitres / 1000).toFixed(0);
+    const pondAvailable = pondTelemetry.waterLitres;
+    let pondCompare = '';
+
+    if (pondTelemetry.mode === 'pond' && pondAvailable > 0) {
+      const canSustain = pondAvailable >= cropLitres;
+      pondCompare = canSustain
+        ? `<div class="calc-detail-row" style="color:#047857;"><span>Pond Water Adequacy</span><strong>✔ Usable pond storage sufficient (${(pondAvailable - cropLitres).toLocaleString()} L surplus)</strong></div>`
+        : `<div class="calc-detail-row" style="color:#dc2626;"><span>Pond Water Adequacy</span><strong>⚠ Storage Deficit of ${(cropLitres - pondAvailable).toLocaleString()} L from current pond storage</strong></div>`;
+    } else if (pondTelemetry.mode === 'default') {
+      pondCompare = '<div class="calc-detail-row" style="color:#0284c7;"><span>Advisory Mode</span><strong>Default Seasonal Recommendation Active</strong></div>';
+    }
+
+    waterInfoHtml = `
+      <div class="calc-detail-row">
+        <span>Seasonal Crop Water Demand</span>
+        <strong>${cropLitres.toLocaleString()} L (~${cropM3} m³)</strong>
+      </div>
+      ${pondCompare}
+    `;
+  }
+
+  const areaSqMetres = (area * 4046.86).toLocaleString(undefined, { maximumFractionDigits: 1 });
+  const areaSqFeet = Math.round(area * 43560).toLocaleString();
+
+  calcResult.innerHTML = `
+    <div class="calc-answer-card">
+      <div class="calc-result-header">
+        <div class="calc-result-icon">${cfg.icon}</div>
+        <div>
+          <h3 class="calc-result-title">${esc(crop)} — ${requirementCategoryName} REQUIREMENT</h3>
+          <div class="calc-result-subtitle">${esc(m.label)}</div>
+        </div>
+      </div>
+
+      <div class="calc-highlight-box">
+        <div class="highlight-label">Total Required for ${area} ${area === 1 ? 'Acre' : 'Acres'}</div>
+        <div class="highlight-number">${formattedTotal} <span class="highlight-unit">${unitText}</span></div>
+        <div class="highlight-caption">${cfg.categoryLabel} &bull; Official ICAR / TNAU Agronomic Standards</div>
+      </div>
+
+      <div class="calc-breakdown-grid">
+        <div class="calc-detail-row">
+          <span>Field Area</span>
+          <strong>${area} ${area === 1 ? 'Acre' : 'Acres'} (${areaSqMetres} m² / ${areaSqFeet} sq.ft)</strong>
+        </div>
+        <div class="calc-detail-row">
+          <span>Cultivation / Planting Method</span>
+          <strong>${esc(m.label)}</strong>
+        </div>
+        <div class="calc-detail-row">
+          <span>Recommended Rate / Spacing</span>
+          <strong>${esc(m.rateDisplay)}</strong>
+        </div>
+        <div class="calc-detail-row">
+          <span>Standard Field Spacing</span>
+          <strong>${esc(m.spacing)}</strong>
+        </div>
+        <div class="calc-detail-row formula-row">
+          <span>Calculation Formula</span>
+          <strong>${esc(formulaCalculationText)}</strong>
+        </div>
+        ${waterInfoHtml}
+      </div>
+
+      <div class="calc-tip-box">
+        <span class="tip-icon">💡</span>
+        <div class="tip-text">
+          <strong>Agronomic Best Practice:</strong> ${esc(m.tip)}
+        </div>
+      </div>
+    </div>
+  `;
 }
 
 function setupCalculator() {
   const calcBtn = $('calcBtn');
-  const calcResult = $('calcResult');
-  const sel = $('calcCrop');
+  const selCrop = $('calcCrop');
+  const selMethod = $('calcMethod');
+  const areaInput = $('calcArea');
+  const customRateInput = $('calcCustomRate');
+  const areaChips = $$('.area-chip');
+
   if (!calcBtn) return;
 
-  if (sel) {
-    sel.addEventListener('change', syncDefaultSeedRate);
+  // 1. Crop Selection Change
+  if (selCrop) {
+    selCrop.addEventListener('change', () => {
+      syncCropCalculationUI();
+      calculateSeedRequirement();
+    });
   }
 
-  calcBtn.addEventListener('click', () => {
-    const area  = parseFloat($('calcArea').value) || 1.0;
-    const rate  = parseFloat($('calcRate').value);
-    const crop  = $('calcCrop').value;
+  // 2. Method Selection Change
+  if (selMethod) {
+    selMethod.addEventListener('change', () => {
+      syncCustomRateField();
+      updateCropBanner();
+      calculateSeedRequirement();
+    });
+  }
 
-    if (isNaN(rate) || rate <= 0) {
-      calcResult.innerHTML = '<span class="calc-error">⚠ Please enter a valid seed rate.</span>';
-      return;
-    }
+  // 3. Quick Area Preset Chips
+  if (areaChips.length > 0) {
+    areaChips.forEach(chip => {
+      chip.addEventListener('click', () => {
+        areaChips.forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        if (areaInput) {
+          areaInput.value = chip.dataset.area;
+        }
+        calculateSeedRequirement();
+      });
+    });
+  }
 
-    const total = (area * rate).toFixed(2);
-    const unit  = (crop === 'Mango' || crop === 'Coconut') ? 'trees / palms' : (crop === 'Sugarcane' ? 'setts' : 'kg seed');
+  // 4. Area Input Change
+  if (areaInput) {
+    areaInput.addEventListener('input', () => {
+      const currentVal = parseFloat(areaInput.value);
+      areaChips.forEach(c => {
+        c.classList.toggle('active', parseFloat(c.dataset.area) === currentVal);
+      });
+      calculateSeedRequirement();
+    });
+  }
 
-    let waterInfo = '';
-    const cropData = CROPS[crop];
-    if (cropData && cropData.WaterReq_L) {
-      const cropLitres = cropData.WaterReq_L * area;
-      const cropM3 = (cropLitres / 1000).toFixed(0);
-      const pondAvailable = pondTelemetry.waterLitres;
-      let pondCompare = '';
+  // 5. Custom Rate Input Change
+  if (customRateInput) {
+    customRateInput.addEventListener('input', () => {
+      calculateSeedRequirement();
+    });
+  }
 
-      if (pondTelemetry.mode === 'pond' && pondAvailable > 0) {
-        const canSustain = pondAvailable >= cropLitres;
-        pondCompare = canSustain
-          ? `<div class="calc-row" style="color:#047857;"><span>Pond Water Adequacy</span><strong>✔ Usable pond water sufficient (${(pondAvailable - cropLitres).toLocaleString()} L surplus)</strong></div>`
-          : `<div class="calc-row" style="color:#dc2626;"><span>Pond Water Adequacy</span><strong>⚠ Deficit of ${(cropLitres - pondAvailable).toLocaleString()} L from current pond storage</strong></div>`;
-      } else if (pondTelemetry.mode === 'default') {
-        pondCompare = '<div class="calc-row" style="color:#0284c7;"><span>Mode</span><strong>Default Seasonal Recommendation Mode</strong></div>';
-      }
+  // 6. Compute Button Click
+  calcBtn.addEventListener('click', calculateSeedRequirement);
 
-      waterInfo = `
-        <div class="calc-row"><span>Crop Water Demand (${area} Acre)</span><strong>${cropLitres.toLocaleString()} L (~${cropM3} m³)</strong></div>
-        ${pondCompare}
-      `;
-    }
-
-    calcResult.innerHTML = `
-      <div class="calc-answer">
-        <div class="calc-row"><span>Crop</span><strong>${esc(crop)}</strong></div>
-        <div class="calc-row"><span>Field Area</span><strong>${area} Acre (1-Acre Pond Setup)</strong></div>
-        <div class="calc-row"><span>Seed Rate</span><strong>${rate} ${unit}/acre</strong></div>
-        <div class="calc-row total-row"><span>Total Requirement</span><strong>${total} ${unit}</strong></div>
-        ${waterInfo}
-      </div>
-    `;
-  });
-
+  // Initialize
   updateCalculatorCropList();
+  calculateSeedRequirement();
 }
 
 // ============================================================
