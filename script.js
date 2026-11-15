@@ -1108,13 +1108,13 @@ function updatePondTelemetryUI(data) {
   if (data.pm) pondTelemetry.mode = data.pm;
   if (data.sr !== undefined) pondTelemetry.sensorDist = data.sr;
   if (data.wd !== undefined) pondTelemetry.waterDepth = Number(data.wd) || 0;
-  if (data.wv !== undefined) pondTelemetry.waterLitres = Number(data.wv) || 0;
-  if (data.wp !== undefined) pondTelemetry.waterPct = Number(data.wp) || 0;
+  if (data.wv !== undefined) pondTelemetry.waterLitres = data.wv !== null ? Number(data.wv) : null;
+  if (data.wp !== undefined) pondTelemetry.waterPct = data.wp !== null ? Number(data.wp) : null;
   if (data.mo) pondTelemetry.month = data.mo;
   if (data.se) pondTelemetry.season = data.se;
   if (Array.isArray(data.rc)) pondTelemetry.recCrops = data.rc;
   if (data.cc) pondTelemetry.currentCrop = data.cc;
-  if (data.tc !== undefined) pondTelemetry.tankWaterCm = Number(data.tc) || 0;
+  if (data.tc !== undefined) pondTelemetry.tankWaterCm = data.tc !== null ? Number(data.tc) : null;
   if (data.ss !== undefined) pondTelemetry.sensorStatus = data.ss;
 
   const nowTime = new Date().toLocaleTimeString();
@@ -1124,10 +1124,14 @@ function updatePondTelemetryUI(data) {
   if (depthEl) {
     if (pondTelemetry.mode === 'pond') {
       const status = pondTelemetry.sensorStatus || 'OK';
-      if ((status === 'TIMEOUT' || status === 'NO_ECHO') && pondTelemetry.waterDepth === 0) {
+      if (status === 'TIMEOUT' || status === 'NO_ECHO') {
         depthEl.textContent = 'Sensor Timeout';
+      } else if (status === 'TOO_CLOSE') {
+        depthEl.textContent = 'Too Close (<3.5cm)';
+      } else if (status === 'OUT_OF_RANGE') {
+        depthEl.textContent = 'Out of Range (>25cm)';
       } else {
-        depthEl.textContent = pondTelemetry.waterDepth > 0
+        depthEl.textContent = pondTelemetry.waterDepth !== null
           ? pondTelemetry.waterDepth.toFixed(2) + ' m'
           : '0.00 m';
       }
@@ -1141,18 +1145,21 @@ function updatePondTelemetryUI(data) {
     if (pondTelemetry.mode === 'pond') {
       const status = pondTelemetry.sensorStatus || 'OK';
       if (status === 'OK' && pondTelemetry.sensorDist !== null) {
-        const echoCm = (pondTelemetry.sensorDist * 100).toFixed(1);
-        const tankWaterCm = data.tc !== undefined
-          ? Number(data.tc).toFixed(1)
-          : Math.max(0, Math.min(10, (15 - pondTelemetry.sensorDist * 100))).toFixed(1);
-        sensorEl.innerHTML = `<span style="color:#10b981;font-weight:700">● LIVE</span> Tank Echo: <strong>${echoCm} cm</strong> (Water: <strong>${tankWaterCm} cm</strong> / 10cm) &bull; 50x Scale: <strong>${pondTelemetry.waterDepth.toFixed(2)} m / 5.0m</strong> &bull; <span style="opacity:0.85">${nowTime}</span>`;
+        const echoCm = Number(pondTelemetry.sensorDist).toFixed(1);
+        const tankWaterCm = pondTelemetry.tankWaterCm !== null
+          ? Number(pondTelemetry.tankWaterCm).toFixed(1)
+          : Math.max(0, Math.min(10, 15 - Number(pondTelemetry.sensorDist))).toFixed(1);
+        const depthStr = pondTelemetry.waterDepth !== null ? pondTelemetry.waterDepth.toFixed(2) : '0.00';
+        sensorEl.innerHTML = `<span style="color:#10b981;font-weight:700">● LIVE</span> Tank Echo: <strong>${echoCm} cm</strong> (Water: <strong>${tankWaterCm} cm</strong> / 10cm) &bull; 50x Scale: <strong>${depthStr} m / 5.0m</strong> &bull; <span style="opacity:0.85">${nowTime}</span>`;
+      } else if (status === 'TOO_CLOSE') {
+        sensorEl.innerHTML = `<span style="color:#f59e0b;font-weight:700">⚠️ TOO CLOSE (&lt;3.5cm)</span> &bull; Water surface entering sensor blind zone &bull; <span style="opacity:0.85">${nowTime}</span>`;
       } else if (status === 'TIMEOUT' || status === 'NO_ECHO') {
         sensorEl.innerHTML = `<span style="color:#ef4444;font-weight:700">⚠️ SENSOR TIMEOUT</span> &bull; No Echo in Demo Tank &bull; <span style="opacity:0.85">${nowTime}</span>`;
       } else if (status === 'OUT_OF_RANGE') {
-        sensorEl.innerHTML = `<span style="color:#f59e0b;font-weight:700">⚠️ OUT OF RANGE</span> &bull; Echo &gt; 30cm &bull; <span style="opacity:0.85">${nowTime}</span>`;
+        sensorEl.innerHTML = `<span style="color:#f59e0b;font-weight:700">⚠️ OUT OF RANGE</span> &bull; Echo &gt; 25cm &bull; <span style="opacity:0.85">${nowTime}</span>`;
       } else {
         sensorEl.textContent = pondTelemetry.sensorDist !== null
-          ? `Tank Echo: ${(pondTelemetry.sensorDist * 100).toFixed(1)} cm · 50x Scale: ${pondTelemetry.waterDepth.toFixed(2)} m`
+          ? `Tank Echo: ${Number(pondTelemetry.sensorDist).toFixed(1)} cm · 50x Scale: ${pondTelemetry.waterDepth} m`
           : 'Demo Tank: No Echo';
       }
     } else {
@@ -1162,14 +1169,21 @@ function updatePondTelemetryUI(data) {
 
   const litresEl = $('pondLitres');
   if (litresEl) {
-    litresEl.textContent = pondTelemetry.waterLitres > 0
-      ? pondTelemetry.waterLitres.toLocaleString() + ' L'
-      : (pondTelemetry.mode === 'pond' ? '0 Litres (Dry)' : 'Seasonal Normal');
+    const status = pondTelemetry.sensorStatus || 'OK';
+    if (pondTelemetry.mode === 'pond' && (status === 'TIMEOUT' || status === 'NO_ECHO')) {
+      litresEl.textContent = 'Sensor Timeout';
+    } else if (pondTelemetry.mode === 'pond' && status === 'TOO_CLOSE') {
+      litresEl.textContent = 'Warning: Overfilled';
+    } else {
+      litresEl.textContent = pondTelemetry.waterLitres !== null && pondTelemetry.waterLitres > 0
+        ? pondTelemetry.waterLitres.toLocaleString() + ' L'
+        : (pondTelemetry.mode === 'pond' ? '0 Litres (Dry)' : 'Seasonal Normal');
+    }
   }
 
   const volM3El = $('pondVolumeM3');
   if (volM3El) {
-    if (pondTelemetry.waterLitres > 0) {
+    if (pondTelemetry.waterLitres !== null && pondTelemetry.waterLitres > 0) {
       const m3 = (pondTelemetry.waterLitres / 1000).toFixed(0);
       volM3El.textContent = `${m3} m³ usable · 75% eff. (0.3m dead storage · 1-acre model)`;
     } else {
@@ -1179,21 +1193,33 @@ function updatePondTelemetryUI(data) {
 
   const pctEl = $('pondPct');
   if (pctEl) {
-    pctEl.textContent = pondTelemetry.waterPct > 0
-      ? pondTelemetry.waterPct.toFixed(1) + '%'
-      : (pondTelemetry.mode === 'pond' ? '0%' : 'Normal');
+    const status = pondTelemetry.sensorStatus || 'OK';
+    if (pondTelemetry.mode === 'pond' && (status === 'TIMEOUT' || status === 'NO_ECHO')) {
+      pctEl.textContent = '—';
+    } else if (pondTelemetry.mode === 'pond' && status === 'TOO_CLOSE') {
+      pctEl.textContent = '100%+';
+    } else {
+      pctEl.textContent = pondTelemetry.waterPct !== null && pondTelemetry.waterPct > 0
+        ? pondTelemetry.waterPct.toFixed(1) + '%'
+        : (pondTelemetry.mode === 'pond' ? '0%' : 'Normal');
+    }
   }
 
   const fillBar = $('pondFillBar');
   if (fillBar) {
-    const pct = Math.min(100, Math.max(0, pondTelemetry.waterPct));
-    fillBar.style.width = pct + '%';
-    if (pct < 25) {
-      fillBar.style.background = 'linear-gradient(90deg, #ef4444, #f97316)';
-    } else if (pct < 50) {
-      fillBar.style.background = 'linear-gradient(90deg, #f59e0b, #eab308)';
+    const status = pondTelemetry.sensorStatus || 'OK';
+    if (pondTelemetry.mode === 'pond' && (status === 'TIMEOUT' || status === 'NO_ECHO')) {
+      fillBar.style.width = '0%';
     } else {
-      fillBar.style.background = 'linear-gradient(90deg, #38bdf8 0%, #2563eb 50%, #10b981 100%)';
+      const pct = pondTelemetry.waterPct !== null ? Math.min(100, Math.max(0, pondTelemetry.waterPct)) : 0;
+      fillBar.style.width = pct + '%';
+      if (pct < 25) {
+        fillBar.style.background = 'linear-gradient(90deg, #ef4444, #f97316)';
+      } else if (pct < 50) {
+        fillBar.style.background = 'linear-gradient(90deg, #f59e0b, #eab308)';
+      } else {
+        fillBar.style.background = 'linear-gradient(90deg, #38bdf8 0%, #2563eb 50%, #10b981 100%)';
+      }
     }
   }
 
