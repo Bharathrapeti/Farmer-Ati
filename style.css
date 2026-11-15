@@ -1998,22 +1998,21 @@ a {
 }
 
 @keyframes badgeDotPulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.35; transform: scale(0.8); }
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
 }
 
-/* Marquee Track */
+/* Marquee Track - Isolated compositor layout for pure 60fps/120fps motion */
 .advisory-ticker-track {
   flex: 1;
   min-width: 0;
   overflow: hidden;
   position: relative;
   white-space: nowrap;
-  mask-image: linear-gradient(to right, transparent 0%, black 20px, black calc(100% - 20px), transparent 100%);
-  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 20px, black calc(100% - 20px), transparent 100%);
+  contain: paint layout;
 }
 
-/* Continuous Marquee Text: Starts outside right edge (padding-left: 100%), moves left until entire text exits left edge (-100%) */
+/* Continuous Marquee Text: Pure GPU accelerated linear scroll with zero micro-stutter */
 .advisory-ticker-text {
   display: inline-block;
   white-space: nowrap;
@@ -2025,14 +2024,22 @@ a {
   color: rgba(255, 255, 255, 0.95);
   letter-spacing: 0.02em;
   will-change: transform;
+  transform: translate3d(0, 0, 0);
+  -webkit-transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
 }
 
 @keyframes tickerMarquee {
   0% {
     transform: translate3d(0, 0, 0);
+    -webkit-transform: translate3d(0, 0, 0);
   }
   100% {
     transform: translate3d(-100%, 0, 0);
+    -webkit-transform: translate3d(-100%, 0, 0);
   }
 }
 
@@ -2190,24 +2197,53 @@ a {
   letter-spacing: 0.01em;
 }
 
+/* Maintain Side-by-Side Weather on Phones (identical to Tablet layout) */
 @media (max-width: 600px) {
   .weather-compact-container {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 16px;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 4px 2px;
+    margin-bottom: 18px;
   }
-  .weather-glass-bubble {
-    width: 100%;
-    align-items: flex-start;
+  .weather-compact-left {
+    gap: 2px;
+    flex-shrink: 0;
+  }
+  .weather-compact-date {
+    font-size: 13px;
   }
   .weather-compact-temp {
-    font-size: 64px;
+    font-size: clamp(40px, 12vw, 54px);
+    letter-spacing: -1.5px;
   }
   .weather-compact-temp .temp-deg {
-    font-size: 38px;
+    font-size: 30px;
   }
   .weather-compact-temp .temp-c {
-    font-size: 34px;
+    font-size: 26px;
+  }
+  .weather-glass-bubble {
+    width: auto;
+    padding: 12px 16px;
+    gap: 6px;
+    border-radius: 18px;
+    flex-shrink: 0;
+  }
+  .bubble-icon svg {
+    width: 28px;
+    height: 28px;
+  }
+  .bubble-condition {
+    font-size: 13px;
+  }
+  .bubble-pills {
+    gap: 6px;
+  }
+  .pill-temp {
+    padding: 3px 10px;
+    font-size: 11.5px;
   }
 }
 
