@@ -24,9 +24,16 @@
     </div>
   </div>
 
-  <div class="header-status">
-    <span class="status-dot dot-idle" id="connectionDot"></span>
-    <span id="connectionStatus">Not connected</span>
+  <div class="header-actions">
+    <button class="header-connect-btn" id="connectButton" title="Connect to FARMER ATI via Bluetooth">
+      <span class="status-dot dot-idle" id="connectionDot"></span>
+      <span id="connectionStatus">⚡ Connect</span>
+    </button>
+    <button class="header-connect-btn btn-connected" id="disconnectButton" style="display:none" title="Connected to ESP32. Click to Disconnect">
+      <span class="status-dot dot-connected"></span>
+      <span class="connected-label">Connected</span>
+    </button>
+    <span id="connectionMessage" style="display:none"></span>
   </div>
 </header>
 
@@ -64,17 +71,6 @@
         🟢 SUITABLE FOR SPRAYING — 🌱 FARMER ATI ADVISORY: Today's weather conditions are favourable for crop spraying. Check wind speed and ensure crop foliage is dry before application. Always follow recommended dosage and wear PPE.
       </div>
     </div>
-  </div>
-
-  <!-- Bluetooth Connection Action Button (Neat Aside) -->
-  <div class="connect-bar-wrapper">
-    <button class="btn btn-connect" id="connectButton">
-      <span>⚡</span> Connect
-    </button>
-    <button class="btn btn-disconnect" id="disconnectButton" style="display:none">
-      Disconnect
-    </button>
-    <span id="connectionMessage" style="display:none"></span>
   </div>
 
   <!-- ══════════════════════════════════════════════

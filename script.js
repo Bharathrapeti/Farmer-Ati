@@ -2796,20 +2796,20 @@ function setStatus(state, message) {
   const txt2 = $('connectionStatus2');
 
   const states = {
-    idle:        { dot: 'dot-idle',        label: 'Not connected',  msg: message || 'Click "Connect to FARMER ATI" to begin.' },
-    connecting:  { dot: 'dot-connecting',  label: 'Connecting…',    msg: message || 'Opening Bluetooth dialog…' },
-    connected:   { dot: 'dot-connected',   label: 'Connected',      msg: message || 'Receiving live data from ESP32.' },
-    reconnecting:{ dot: 'dot-connecting',  label: 'Reconnecting…',  msg: message || 'Connection lost. Trying to reconnect…' },
-    error:       { dot: 'dot-error',       label: 'Error',          msg: message || 'Could not connect. Please try again.' }
+    idle:        { dot: 'dot-idle',        label: '⚡ Connect',     label2: 'Not connected',  msg: message || 'Click "Connect" to begin.' },
+    connecting:  { dot: 'dot-connecting',  label: 'Connecting…',    label2: 'Connecting…',    msg: message || 'Opening Bluetooth dialog…' },
+    connected:   { dot: 'dot-connected',   label: 'Connected',      label2: 'Connected',      msg: message || 'Receiving live data from ESP32.' },
+    reconnecting:{ dot: 'dot-connecting',  label: 'Reconnecting…',  label2: 'Reconnecting…',  msg: message || 'Connection lost. Trying to reconnect…' },
+    error:       { dot: 'dot-error',       label: '⚡ Connect',     label2: 'Error',          msg: message || 'Could not connect. Please try again.' }
   };
 
   const s = states[state] || states.idle;
   if (dot) { dot.className = 'status-dot ' + s.dot; }
   if (txt) txt.textContent = s.label;
   if (dot2) { dot2.className = 'status-dot ' + s.dot; }
-  if (txt2) txt2.textContent = s.label;
+  if (txt2) txt2.textContent = s.label2 || s.label;
   if (msg) msg.textContent = s.msg;
-  if (stat) stat.textContent = s.label;
+  if (stat) stat.textContent = s.label2 || s.label;
 }
 
 async function connectBLE() {
