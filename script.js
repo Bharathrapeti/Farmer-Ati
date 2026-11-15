@@ -1140,33 +1140,6 @@ function updatePondTelemetryUI(data) {
     }
   }
 
-  const sensorEl = $('pondSensorDist');
-  if (sensorEl) {
-    if (pondTelemetry.mode === 'pond') {
-      const status = pondTelemetry.sensorStatus || 'OK';
-      if (status === 'OK' && pondTelemetry.sensorDist !== null) {
-        const echoCm = Number(pondTelemetry.sensorDist).toFixed(1);
-        const tankWaterCm = pondTelemetry.tankWaterCm !== null
-          ? Number(pondTelemetry.tankWaterCm).toFixed(1)
-          : Math.max(0, Math.min(10, 15 - Number(pondTelemetry.sensorDist))).toFixed(1);
-        const depthStr = pondTelemetry.waterDepth !== null ? pondTelemetry.waterDepth.toFixed(2) : '0.00';
-        sensorEl.innerHTML = `<span style="color:#10b981;font-weight:700">● LIVE</span> Tank Echo: <strong>${echoCm} cm</strong> (Water: <strong>${tankWaterCm} cm</strong> / 10cm) &bull; 50x Scale: <strong>${depthStr} m / 5.0m</strong> &bull; <span style="opacity:0.85">${nowTime}</span>`;
-      } else if (status === 'TOO_CLOSE') {
-        sensorEl.innerHTML = `<span style="color:#f59e0b;font-weight:700">⚠️ TOO CLOSE (&lt;3.5cm)</span> &bull; Water surface entering sensor blind zone &bull; <span style="opacity:0.85">${nowTime}</span>`;
-      } else if (status === 'TIMEOUT' || status === 'NO_ECHO') {
-        sensorEl.innerHTML = `<span style="color:#ef4444;font-weight:700">⚠️ SENSOR TIMEOUT</span> &bull; No Echo in Demo Tank &bull; <span style="opacity:0.85">${nowTime}</span>`;
-      } else if (status === 'OUT_OF_RANGE') {
-        sensorEl.innerHTML = `<span style="color:#f59e0b;font-weight:700">⚠️ OUT OF RANGE</span> &bull; Echo &gt; 25cm &bull; <span style="opacity:0.85">${nowTime}</span>`;
-      } else {
-        sensorEl.textContent = pondTelemetry.sensorDist !== null
-          ? `Tank Echo: ${Number(pondTelemetry.sensorDist).toFixed(1)} cm · 50x Scale: ${pondTelemetry.waterDepth} m`
-          : 'Demo Tank: No Echo';
-      }
-    } else {
-      sensorEl.textContent = 'Mode: Default Seasonal (No Sensor)';
-    }
-  }
-
   const litresEl = $('pondLitres');
   if (litresEl) {
     const status = pondTelemetry.sensorStatus || 'OK';
