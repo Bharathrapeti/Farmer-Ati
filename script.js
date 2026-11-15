@@ -1,34 +1,6 @@
-'use strict';
-
 // ============================================================
-// FARMER ATI – Intelligent Pond-Water-Based Seasonal Crop System
-//
-// ESP32 BLE service:        0xA000
-// ESP32 characteristic:     0xA001  (READ | NOTIFY)
-// Device name:              FARMER ATI
-//
-// Reliable Framed Binary Protocol (Max 20 bytes per BLE packet):
-//   [0]: 0xFA  (Magic byte 1)
-//   [1]: 0x72  (Magic byte 2: Text & Telemetry JSON protocol)
-//   [2]: msgId (0..255)
-//   [3]: pktIdx (0..totalPkts-1)
-//   [4]: totalPkts (1..255)
-//   [5..N]: payload bytes (reassembled first, then decoded as UTF-8)
-//
-// JSON format once assembled:
-//   {
-//     "s": "SCREEN TITLE",
-//     "l": ["line 1", "line 2", ...],
-//     "pm": "pond" | "default",
-//     "sr": sensor_distance_m | null,
-//     "wd": water_depth_m,
-//     "wv": usable_water_litres,
-//     "wp": water_pct,
-//     "mo": "Month",
-//     "se": "Season",
-//     "rc": ["Crop1", "Crop2", ...],
-//     "cc": "Current Crop"
-//   }
+// FARMER ATI – Intelligent Pond-Water & Seasonal Dashboard
+// Full Synchronization with ESP32 OLED Hardware
 // ============================================================
 
 const BLE_DEVICE_NAME         = 'FARMER ATI';
@@ -41,7 +13,7 @@ let bleServer         = null;
 let bleCharacteristic = null;
 let frameCount        = 0;
 
-// Pond & Recommendation Telemetry State
+// Shared Recommendation & Pond Telemetry State (Exact match with ESP32)
 let pondTelemetry = {
   mode: 'default',
   sensorDist: null,
@@ -54,11 +26,12 @@ let pondTelemetry = {
   currentCrop: ''
 };
 
-// UI Filters
-let cropFilterMode   = 'all'; // 'all' or 'rec'
-let cropSearchQuery  = '';
-let problemFilterMode= 'all'; // 'all' or 'rec'
-let selectedCrop     = null;
+// Filter & Selection State
+let cropFilterMode    = 'all';     // 'all' or 'rec'
+let cropSearchQuery   = '';
+let problemFilterMode = 'all';     // 'all' or 'rec'
+let selectedCrop      = 'Paddy';
+let lastScreenName    = '';
 
 // ── DOM helpers ───────────────────────────────────────────────
 const $  = id => document.getElementById(id);
@@ -118,7 +91,8 @@ const CROPS = {
     "Months": [
       "JUNE TO JANUARY",
       "DEPENDS ON LOCAL SEASON"
-    ]
+    ],
+    "SeedRate_1Acre": 20.0
   },
   "Groundnut": {
     "Season": [
@@ -168,7 +142,8 @@ const CROPS = {
     "Months": [
       "JUNE TO AUGUST",
       "AND JAN TO FEB"
-    ]
+    ],
+    "SeedRate_1Acre": 55.0
   },
   "Black Gram": {
     "Season": [
@@ -215,7 +190,8 @@ const CROPS = {
     "Months": [
       "SEP TO NOV",
       "AND JAN TO FEB IN RICE FALLOW"
-    ]
+    ],
+    "SeedRate_1Acre": 8.0
   },
   "Green Gram": {
     "Season": [
@@ -260,7 +236,8 @@ const CROPS = {
     "Months": [
       "FEB TO APR",
       "AND JUN TO JUL"
-    ]
+    ],
+    "SeedRate_1Acre": 8.0
   },
   "Chilli": {
     "Season": [
@@ -304,7 +281,8 @@ const CROPS = {
     "Months": [
       "AUG TO OCT",
       "AND JAN TO FEB"
-    ]
+    ],
+    "SeedRate_1Acre": 0.4
   },
   "Tomato": {
     "Season": [
@@ -350,7 +328,8 @@ const CROPS = {
     "Months": [
       "JUL TO AUG",
       "AND NOV TO JAN"
-    ]
+    ],
+    "SeedRate_1Acre": 0.2
   },
   "Brinjal": {
     "Season": [
@@ -395,7 +374,8 @@ const CROPS = {
     "Months": [
       "DEC TO JAN",
       "AND MAY TO JUL"
-    ]
+    ],
+    "SeedRate_1Acre": 0.2
   },
   "Onion": {
     "Season": [
@@ -440,7 +420,8 @@ const CROPS = {
     "Months": [
       "MAY TO JUN",
       "AND OCT TO NOV"
-    ]
+    ],
+    "SeedRate_1Acre": 4.0
   },
   "Maize": {
     "Season": [
@@ -484,7 +465,8 @@ const CROPS = {
     "Months": [
       "JUL TO AUG",
       "AND JAN TO FEB"
-    ]
+    ],
+    "SeedRate_1Acre": 8.0
   },
   "Ragi": {
     "Season": [
@@ -530,7 +512,8 @@ const CROPS = {
     "Months": [
       "MAY TO JUL",
       "AND DEC TO JAN"
-    ]
+    ],
+    "SeedRate_1Acre": 5.0
   },
   "Cotton": {
     "Season": [
@@ -573,7 +556,8 @@ const CROPS = {
     "Months": [
       "AUG TO SEP",
       "AND FEB TO MAR"
-    ]
+    ],
+    "SeedRate_1Acre": 1.5
   },
   "Sesame": {
     "Season": [
@@ -619,7 +603,8 @@ const CROPS = {
     "Months": [
       "FEB TO APR",
       "AND JUN TO JUL"
-    ]
+    ],
+    "SeedRate_1Acre": 2.0
   },
   "Bhendi": {
     "Season": [
@@ -661,7 +646,8 @@ const CROPS = {
     "Months": [
       "JUN TO JUL",
       "AND FEB TO MAR"
-    ]
+    ],
+    "SeedRate_1Acre": 3.0
   },
   "Sugarcane": {
     "Season": [
@@ -707,7 +693,8 @@ const CROPS = {
     "Months": [
       "DEC TO MAR",
       "AND JUN TO JUL"
-    ]
+    ],
+    "SeedRate_1Acre": 30000.0
   },
   "Mango": {
     "Season": [
@@ -757,7 +744,8 @@ const CROPS = {
     "Months": [
       "PLANTING: JUL TO DEC",
       "FLOWERING: DEC TO FEB"
-    ]
+    ],
+    "SeedRate_1Acre": 40.0
   },
   "Coconut": {
     "Season": [
@@ -806,84 +794,296 @@ const CROPS = {
     "Months": [
       "PLANTING: MAY-JUN",
       "AND OCT-NOV"
+    ],
+    "SeedRate_1Acre": 70.0
+  }
+};
+
+// ── 10 Structured Farmer Problems Database ────────────────────
+const PROBLEMS = {
+  "Stem Borer & Leaf Folder": {
+    "crops": [
+      "Paddy",
+      "Maize"
+    ],
+    "symptoms": [
+      "Dead hearts during early vegetative tillering stage",
+      "White heads (chaffy panicles with no grain) at maturity",
+      "Leaves longitudinally folded with scraped transparent epidermal patches"
+    ],
+    "causes": [
+      "Scirpophaga incertulas (Yellow stem borer larvae bore into stem bases)",
+      "Cnaphalocrocis medinalis (Leaf folder caterpillars weave leaf margins)",
+      "Excessive nitrogen application and dense transplanting spacing"
+    ],
+    "solutions": [
+      "Spray Chlorantraniliprole 18.5% SC @ 60 ml/acre or Cartap Hydrochloride 50% SP @ 400 g/acre",
+      "Clip seedling tips before transplanting to eliminate egg masses",
+      "Maintain alternate wetting and drying instead of continuous waterlogging"
+    ],
+    "organic": [
+      "Release Trichogramma japonicum egg parasitoids @ 40,000/acre at weekly intervals",
+      "Install pheromone traps (5 per acre) with Scirpophaga lures for monitoring",
+      "Spray 5% Neem Seed Kernel Extract (NSKE) or Neem Oil @ 3-5 ml/L"
+    ]
+  },
+  "Sucking Pest Complex (Aphids, Thrips, Whiteflies)": {
+    "crops": [
+      "Chilli",
+      "Tomato",
+      "Brinjal",
+      "Cotton",
+      "Black Gram",
+      "Green Gram",
+      "Groundnut",
+      "Bhendi",
+      "Onion"
+    ],
+    "symptoms": [
+      "Upward or downward leaf curling, crinkling, and stunted terminal flushes",
+      "Silvery sheen on underside of leaves with black fecal specks (thrips)",
+      "Sooty mold development on sticky honeydew secreted by aphids/whiteflies",
+      "Vector transmission of Yellow Vein Mosaic and Leaf Curl viruses"
+    ],
+    "causes": [
+      "Thrips palmi, Bemisia tabaci, and Aphis gossypii feeding on phloem sap",
+      "Dry, warm weather spells with low relative humidity"
+    ],
+    "solutions": [
+      "Foliar spray with Imidacloprid 17.8% SL @ 50 ml/acre or Acetamiprid 20% SP @ 40 g/acre",
+      "Grow 2-3 border rows of sorghum or maize to trap and buffer incoming pests",
+      "Avoid spraying synthetic pyrethroids which induce pest resurgence"
+    ],
+    "organic": [
+      "Erect yellow and blue sticky traps @ 10-12 traps per acre",
+      "Spray Verticillium lecanii or Beauveria bassiana bio-fungicide @ 5 g/L",
+      "Spray 10,000 ppm Azadirachtin / Neem oil @ 3 ml/L with mild soap sticker"
+    ]
+  },
+  "Fruit, Shoot & Pod Borers": {
+    "crops": [
+      "Brinjal",
+      "Tomato",
+      "Chilli",
+      "Bhendi",
+      "Cotton",
+      "Black Gram",
+      "Green Gram"
+    ],
+    "symptoms": [
+      "Wilting and drooping of tender apical shoots in vegetative stage",
+      "Circular boreholes on fruits and pods with extruded larval frass",
+      "Premature dropping of flower buds and unmarketable distorted fruits"
+    ],
+    "causes": [
+      "Leucinodes orbonalis (Brinjal shoot & fruit borer)",
+      "Helicoverpa armigera (Tomato / Cotton bollworm)",
+      "Earias vittella (Spotted bollworm in Bhendi and Cotton)"
+    ],
+    "solutions": [
+      "Spray Flubendiamide 39.35% SC @ 40 ml/acre or Emamectin Benzoate 5% SG @ 80 g/acre",
+      "Collect and deep-bury infested fruits and withered terminal shoots weekly",
+      "Observe safety waiting periods (pre-harvest interval) before picking"
+    ],
+    "organic": [
+      "Install species-specific sex pheromone traps @ 5-8 traps/acre",
+      "Spray Bacillus thuringiensis (Bt var. kurstaki) @ 2 g/L during twilight hours",
+      "Apply Neem cake to the soil @ 100 kg/acre at the time of planting"
+    ]
+  },
+  "Fungal Blights, Leaf Spots & Blast": {
+    "crops": [
+      "Paddy",
+      "Groundnut",
+      "Tomato",
+      "Chilli",
+      "Onion",
+      "Ragi"
+    ],
+    "symptoms": [
+      "Spindle-shaped lesions with grayish centers and brown borders (Paddy Blast)",
+      "Circular dark necrotic spots surrounded by yellow halos (Groundnut Tikka)",
+      "Concentric rings producing 'target board' lesions on leaves (Tomato Early Blight)"
+    ],
+    "causes": [
+      "Magnaporthe oryzae (Pyricularia), Cercospora personata, Alternaria solani",
+      "High relative humidity (>85%), cloudy weather, and leaf wetness duration > 10 hours"
+    ],
+    "solutions": [
+      "Spray Tricyclazole 75% WP @ 120 g/acre for Blast or Mancozeb 75% WP @ 400 g/acre for Blight",
+      "Ensure balanced fertilization: avoid excess nitrogen and supply adequate potassium",
+      "Remove lower infected leaves to prevent upward fungal spore splash"
+    ],
+    "organic": [
+      "Seed treatment with Trichoderma viride @ 4 g/kg seed or Pseudomonas fluorescens @ 10 g/kg",
+      "Foliar spray with Pseudomonas fluorescens @ 5 g/L or 1% Bordeaux mixture",
+      "Soil enrichment with farmyard manure composted with Trichoderma"
+    ]
+  },
+  "Powdery Mildew & Rusts": {
+    "crops": [
+      "Green Gram",
+      "Black Gram",
+      "Bhendi",
+      "Mango",
+      "Sesame",
+      "Chilli"
+    ],
+    "symptoms": [
+      "White talcum-like powdery fungal growth on upper and lower leaf surfaces",
+      "Yellowish-brown chlorotic spots on corresponding upper leaf surfaces",
+      "Blossom blighting and fruit drop in mango inflorescences"
+    ],
+    "causes": [
+      "Erysiphe polygoni, Oidium mangiferae, and Leveillula taurica",
+      "Warm days coupled with cool, humid nights in winter and spring"
+    ],
+    "solutions": [
+      "Foliar spray of Wettable Sulfur 80% WDG @ 500 g/acre or Hexaconazole 5% EC @ 200 ml/acre",
+      "Spray during early morning or late afternoon to prevent sulfur phytotoxicity",
+      "Prune crowded, crossing canopy branches to improve sunlight penetration"
+    ],
+    "organic": [
+      "Foliar spray of 10% unboiled fresh cow milk or diluted sour butter milk",
+      "Spray Ampelomyces quisqualis hyperparasitic bio-fungicide @ 5 g/L",
+      "Apply micronized organic wettable sulfur formulations at first onset"
+    ]
+  },
+  "Wilt & Root Rot Complex": {
+    "crops": [
+      "Cotton",
+      "Chilli",
+      "Tomato",
+      "Groundnut",
+      "Sugarcane",
+      "Black Gram"
+    ],
+    "symptoms": [
+      "Sudden flaccidity, drooping, and yellowing of foliage despite moist soil",
+      "Dark brown vascular discoloration visible when lower stem is sliced lengthwise",
+      "Shredded, decayed cortical root tissues with black sclerotial bodies"
+    ],
+    "causes": [
+      "Fusarium oxysporum, Rhizoctonia solani, and Macrophomina phaseolina",
+      "Poor soil aeration, compaction, and root damage from nematodes or waterlogging"
+    ],
+    "solutions": [
+      "Drench collar zone with Copper Oxychloride 50% WP @ 2.5 g/L or Carbendazim @ 1 g/L",
+      "Adopt raised broad-bed and furrow cultivation to avoid standing moisture at root collars",
+      "Practice 3-year crop rotation with non-host cereals or millets"
+    ],
+    "organic": [
+      "Treat seeds with Trichoderma harzianum @ 10 g/kg seed before sowing",
+      "Soil application of 1 kg Trichoderma mixed in 100 kg well-cured FYM per acre",
+      "Drench root zone with Panchagavya (3% solution) or Jeevamrutha slurry"
+    ]
+  },
+  "Pond Water Shortage & Drought Management": {
+    "crops": [
+      "All Crops"
+    ],
+    "symptoms": [
+      "Pond depth dropping below 1.0 metre (<20% storage capacity)",
+      "Leaf rolling, wilting during noon hours, and premature flower shedding",
+      "Tip drying and reduced tillering/branching across field crops"
+    ],
+    "causes": [
+      "Prolonged dry spell, delayed monsoon replenishment, and high evaporation losses",
+      "Over-irrigation in early stages exhausting farm pond storage"
+    ],
+    "solutions": [
+      "Switch strictly to micro-irrigation (drip / micro-sprinklers) to conserve 40-60% water",
+      "Prioritize irrigation only during critical stages (flowering and grain/fruit filling)",
+      "Irrigate during evening and night hours to minimize surface evaporation"
+    ],
+    "organic": [
+      "Apply organic mulching with dry crop residue/straw (5 cm thickness) across beds",
+      "Spray 1% Potassium Chloride (MOP) or Kaolin 5% as anti-transpirant to reduce leaf water loss",
+      "Foliar spray with Pink Pigmented Facultative Methylotrophs (PPFM) @ 2 ml/L"
+    ]
+  },
+  "Waterlogging & Poor Drainage Stress": {
+    "crops": [
+      "Groundnut",
+      "Black Gram",
+      "Green Gram",
+      "Chilli",
+      "Tomato",
+      "Cotton",
+      "Sesame"
+    ],
+    "symptoms": [
+      "Uniform yellowing of leaves (nitrogen leaching and root hypoxia)",
+      "Root decay, blackening, and sour fermentation odor from soil",
+      "Premature leaf drop and stunting of newly emerging flushes"
+    ],
+    "causes": [
+      "Heavy monsoon downpours exceeding pond inflow diversion capacity",
+      "Impermeable subsoil hardpan and absence of field drainage furrows"
+    ],
+    "solutions": [
+      "Excavate temporary surface drainage channels (30 cm deep) to drain standing ponding within 12 hours",
+      "Apply light foliar spray of 1% Urea + 0.5% Micronutrient mix once drainage is established",
+      "Incorporate gypsum (200 kg/acre) in clay soils to enhance soil permeability"
+    ],
+    "organic": [
+      "Spray fermented curd-extract or Panchagavya 3% to revive root metabolic function",
+      "Apply vermicompost enriched with Pseudomonas to check anaerobic fungal pathogens",
+      "Loosen topsoil between crop rows using a hand wheel-hoe once surface dries"
+    ]
+  },
+  "Weed Competition & Field Cleanliness": {
+    "crops": [
+      "All Crops"
+    ],
+    "symptoms": [
+      "Crop yellowing and severe yield suppression due to weed canopy shading",
+      "Competition for 30-50% of available soil moisture and applied nutrients",
+      "Weed stands serving as alternate overwintering hosts for pests and viruses"
+    ],
+    "causes": [
+      "Echinochloa, Cyperus rotundus, Parthenium hysterophorus, and Trianthema portulacastrum",
+      "Delayed critical-period weeding (first 20 to 45 days after sowing)"
+    ],
+    "solutions": [
+      "Execute first mechanical/manual weeding at 15-20 DAS and second at 35-40 DAS",
+      "Use cono-weeder in SRI paddy at 10-day intervals to incorporate weeds as green manure",
+      "Apply pre-emergence herbicide like Pendimethalin 30% EC @ 1.0 L/acre within 3 days of sowing"
+    ],
+    "organic": [
+      "Practice intercropping with smother crops like Cowpea, Black Gram, or Sunnhemp",
+      "Lay biodegradable coir pith or paddy straw mulch across vegetable furrows",
+      "Deploy wheel-hoe intercultivation between crop rows during early seedling stages"
+    ]
+  },
+  "Soil Salinity & Organic Matter Depletion": {
+    "crops": [
+      "All Crops"
+    ],
+    "symptoms": [
+      "White or grayish salt encrustation on ridges and furrow beds",
+      "Marginal leaf scorching, poor seed germination, and patchy crop establishment",
+      "Soil hardening, surface crusting, and poor water infiltration"
+    ],
+    "causes": [
+      "Continuous irrigation with brackish water without periodic leaching",
+      "Absence of farmyard manure, green manuring, and crop residue recycling"
+    ],
+    "solutions": [
+      "Conduct routine soil health tests (pH, EC, Organic Carbon, Available NPK)",
+      "Leach excess salts with good-quality pond water through drainage ditches",
+      "Apply agricultural gypsum @ 1-2 tonnes/acre based on ESP (Exchangeable Sodium Percentage)"
+    ],
+    "organic": [
+      "Grow and incorporate green manure crops (Daincha / Sesbania or Sunnhemp) at 45 days",
+      "Apply 5 tonnes well-decomposed FYM or 2 tonnes vermicompost per acre annually",
+      "Inoculate soil with bio-fertilizers: Azospirillum, Phosphobacteria, and VAM"
     ]
   }
 };
 
-// ── Common Field Problems & Solutions ─────────────────────────
-const PROBLEMS = {
-  "Stem Borer & Leaf Folder": [
-    "Common in Paddy and Maize",
-    "Signs: Dead heart at vegetative stage, white ear at maturity, folded leaves",
-    "Organic Care: Trichogramma egg parasitoids, pheromone traps (5/acre)",
-    "Spray: Neem oil 3-5 ml/L or NSKE 5% at early infestation",
-    "Prevention: Balanced nitrogen, avoid continuous flooding, clip seedling tips"
-  ],
-  "Sucking Pests (Aphids/Thrips/Whitefly)": [
-    "Affects Chilli, Tomato, Brinjal, Cotton, Black Gram, Green Gram, Groundnut",
-    "Signs: Leaf curling, sooty mold, vector for Yellow Mosaic and Leaf Curl viruses",
-    "Organic Care: Yellow and blue sticky traps (10/acre), spray neem seed kernel extract",
-    "Spray: 5% Neem oil + soap solution or Verticillium lecanii bio-pesticide",
-    "Prevention: Clean weeding, border cropping with maize or sorghum"
-  ],
-  "Fruit & Shoot Borer": [
-    "Prevalent in Brinjal, Tomato, Bhendi, Chilli",
-    "Signs: Drooping terminal shoots, borehole in fruits with excreta",
-    "Organic Care: Clip and destroy infested shoots weekly, pheromone traps",
-    "Spray: Bacillus thuringiensis (Bt) @ 2g/L or Neem cake soil application",
-    "Prevention: Crop rotation with non-solanaceous crops, avoid ratoon cropping"
-  ],
-  "Fungal Blight & Leaf Spot": [
-    "Affects Paddy (Blast), Groundnut (Tikka), Tomato (Early Blight)",
-    "Signs: Concentric circular dark spots, spindle-shaped lesions on leaves",
-    "Organic Care: Seed treatment with Trichoderma viride @ 4g/kg seed",
-    "Spray: Pseudomonas fluorescens spray @ 10g/L or 1% Bordeaux mixture",
-    "Prevention: Proper spacing, remove bottom diseased leaves, good air flow"
-  ],
-  "Powdery Mildew & Rust": [
-    "Common in Green Gram, Black Gram, Bhendi, Mango, Sesame",
-    "Signs: White powdery patches on leaf surfaces, yellowish/orange pustules",
-    "Organic Care: Milk spray (10% solution) or sulfur-based organic formulation",
-    "Spray: Wettable sulfur @ 2g/L or Ampelomyces quisqualis bio-fungicide",
-    "Prevention: Wider plant spacing, avoid excess nitrogen, prune crowded branches"
-  ],
-  "Wilt & Root Rot Complex": [
-    "Attacks Cotton, Chilli, Tomato, Groundnut, Sugarcane",
-    "Signs: Sudden drooping and yellowing of foliage, vascular browning in stems",
-    "Organic Care: Enrich farmyard manure with Trichoderma and Pseudomonas",
-    "Spray / Drench: Drench root zone with bio-control slurry or copper hydroxide",
-    "Prevention: Ensure raised beds, avoid waterlogging, long crop rotation"
-  ],
-  "Pond Water Shortage Management": [
-    "Crucial during dry spells and low pond storage (<30%)",
-    "Advisory: Shift immediately to micro-irrigation (drip / sprinkler)",
-    "Practices: Mulch with crop residues (5 cm thickness) to conserve soil moisture",
-    "Crop Choice: Switch to low-water pulses (Black Gram, Green Gram, Sesame, Ragi)",
-    "Irrigation: Schedule irrigation at critical stages only (flowering & pod set)"
-  ],
-  "Waterlogging & Drainage Issues": [
-    "Risk during heavy North-East monsoon showers (Oct-Dec)",
-    "Signs: Yellowing leaves, root asphyxiation, stunted vegetative growth",
-    "Action: Dig shallow field drainage channels to divert excess surface water",
-    "Recovery: Apply light foliar spray of 1% urea or 0.5% micronutrient after drainage",
-    "Prevention: Prepare broad-bed and furrow system for vegetable crops"
-  ],
-  "Weed Competition & Intercultivation": [
-    "Reduces yield by 30-50% in early 30-45 days of all crops",
-    "Action: First hand weeding at 15-20 days, second weeding at 35-40 days",
-    "Organic Solution: Grow intercrops/cover crops (Cowpea or Sunnhemp) to smother weeds",
-    "Mechanical: Use cono-weeder for SRI paddy and wheel hoe for row crops"
-  ],
-  "Soil Salinity & Low Organic Matter": [
-    "Impairs nutrient uptake, seed germination, and root elongation",
-    "Correction: Apply 5 tonnes/acre well-rotted FYM or vermicompost",
-    "Green Manure: Grow and incorporate Daincha or Sunnhemp at 45 days",
-    "Testing: Conduct soil test (NPK, pH, EC) before applying major fertilizers"
-  ]
-};
-
 // ============================================================
-// TAB NAVIGATION
+// TAB NAVIGATION & SYNCHRONIZATION
 // ============================================================
 
 $$('.tab-button').forEach(btn => {
@@ -905,7 +1105,6 @@ function switchTab(tabId) {
 function updatePondTelemetryUI(data) {
   if (!data) return;
 
-  // Extract fields
   if (data.pm) pondTelemetry.mode = data.pm;
   if (data.sr !== undefined) pondTelemetry.sensorDist = data.sr;
   if (data.wd !== undefined) pondTelemetry.waterDepth = Number(data.wd) || 0;
@@ -916,7 +1115,7 @@ function updatePondTelemetryUI(data) {
   if (Array.isArray(data.rc)) pondTelemetry.recCrops = data.rc;
   if (data.cc) pondTelemetry.currentCrop = data.cc;
 
-  // Update Overview Elements
+  // Overview Tab UI
   const depthEl = $('pondDepth');
   if (depthEl) {
     depthEl.textContent = pondTelemetry.waterDepth > 0
@@ -928,10 +1127,10 @@ function updatePondTelemetryUI(data) {
   if (sensorEl) {
     if (pondTelemetry.mode === 'pond') {
       sensorEl.textContent = pondTelemetry.sensorDist !== null
-        ? `Ultrasonic Echo: ${pondTelemetry.sensorDist.toFixed(2)} m (Ref: 5.0m)`
-        : 'Sensor offline / Disconnected';
+        ? `HC-SR04 Echo: ${pondTelemetry.sensorDist.toFixed(2)} m · Ref: 5.0m`
+        : 'HC-SR04 > 4.0m / Low Water';
     } else {
-      sensorEl.textContent = 'Mode: Default Seasonal (No sensor)';
+      sensorEl.textContent = 'Mode: Default Seasonal (No Sensor)';
     }
   }
 
@@ -946,7 +1145,7 @@ function updatePondTelemetryUI(data) {
   if (volM3El) {
     if (pondTelemetry.waterLitres > 0) {
       const m3 = (pondTelemetry.waterLitres / 1000).toFixed(0);
-      volM3El.textContent = `${m3} m³ usable · 75% eff. (Dead storage 0.3m)`;
+      volM3El.textContent = `${m3} m³ usable · 75% eff. (0.3m dead storage)`;
     } else {
       volM3El.textContent = '75% Irrig. Eff. · Dead Storage 0.3m';
     }
@@ -994,7 +1193,7 @@ function updatePondTelemetryUI(data) {
   const countRecCropsEl = $('countRecCrops');
   if (countRecCropsEl) countRecCropsEl.textContent = pondTelemetry.recCrops.length;
 
-  // Render chips
+  // Render clickable crop chips
   const chipsEl = $('pondCropList');
   if (chipsEl) {
     if (pondTelemetry.recCrops.length > 0) {
@@ -1007,7 +1206,6 @@ function updatePondTelemetryUI(data) {
         </span>`;
       }).join('');
 
-      // Chip click jumps to Crop Library
       chipsEl.querySelectorAll('.crop-chip').forEach(chip => {
         chip.addEventListener('click', () => {
           const cName = chip.dataset.crop;
@@ -1016,11 +1214,11 @@ function updatePondTelemetryUI(data) {
         });
       });
     } else {
-      chipsEl.innerHTML = '<span class="chip-empty">No crops meet the current water and seasonal criteria. Check pond storage.</span>';
+      chipsEl.innerHTML = '<span class="chip-empty">No crops meet current water & seasonal criteria. Check pond storage.</span>';
     }
   }
 
-  // Refresh crop grid & problems if active
+  // Refresh tabs dynamically
   buildCropLibrary();
   buildProblems();
   updateCalculatorCropList();
@@ -1041,12 +1239,12 @@ function buildCropLibrary() {
 
   let filtered = allNames;
 
-  // 1. Filter by recommendation
+  // Filter mode: recommended only
   if (cropFilterMode === 'rec' && pondTelemetry.recCrops.length > 0) {
     filtered = filtered.filter(name => pondTelemetry.recCrops.includes(name));
   }
 
-  // 2. Filter by search query
+  // Search filter
   if (cropSearchQuery.trim()) {
     const q = cropSearchQuery.toLowerCase();
     filtered = filtered.filter(name => {
@@ -1059,7 +1257,7 @@ function buildCropLibrary() {
   }
 
   if (filtered.length === 0) {
-    grid.innerHTML = '<div class="muted" style="grid-column: 1/-1; padding: 20px; text-align: center;">No crops match your current filter.</div>';
+    grid.innerHTML = '<div class="muted" style="grid-column:1/-1; padding:20px; text-align:center;">No crops match your current filter.</div>';
     return;
   }
 
@@ -1075,15 +1273,16 @@ function buildCropLibrary() {
     btn.innerHTML = `
       <span class="crop-name">${esc(name)}</span>
       ${waterStr ? `<span class="crop-water-pill">💧 ${waterStr}</span>` : ''}
-      <span class="crop-hint">${isRec ? 'Recommended' : 'Tap for guide'}</span>
+      <span class="crop-hint">${isRec ? '🌱 Eligible for Mode' : 'Cultivation Guide'}</span>
     `;
     btn.addEventListener('click', () => selectCrop(name));
     grid.appendChild(btn);
   });
 
-  // Re-select currently selected crop if present
   if (selectedCrop && filtered.includes(selectedCrop)) {
     selectCrop(selectedCrop);
+  } else if (filtered.length > 0) {
+    selectCrop(filtered[0]);
   }
 }
 
@@ -1101,7 +1300,7 @@ function renderCropDetail(name) {
 
   const isRec = pondTelemetry.recCrops.includes(name);
 
-  const makeSection = (title, items) => {
+  const makeList = (title, items) => {
     if (!items || !items.length) return '';
     return `<div class="detail-section">
       <div class="detail-label">${esc(title)}</div>
@@ -1109,7 +1308,7 @@ function renderCropDetail(name) {
     </div>`;
   };
 
-  const makeTextSection = (title, text) => {
+  const makeText = (title, text) => {
     if (!text) return '';
     return `<div class="detail-section">
       <div class="detail-label">${esc(title)}</div>
@@ -1124,20 +1323,20 @@ function renderCropDetail(name) {
   detail.innerHTML = `
     <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
       <h3 class="detail-crop-title" style="margin:0;">🌱 ${esc(name)}</h3>
-      ${isRec ? '<span class="pond-mode-badge badge-pond">Recommended for Current Pond & Season</span>' : ''}
+      ${isRec ? '<span class="pond-mode-badge badge-pond">🌱 Eligible in Active Mode</span>' : '<span class="pond-mode-badge badge-default">General Crop Library</span>'}
     </div>
-    ${makeTextSection('Water Requirement', waterFormatted)}
-    ${makeTextSection('Duration', d.Duration)}
-    ${makeTextSection('Irrigation Schedule', d.Irrigation)}
-    ${makeTextSection('Suitable Soil Type', d.Soil)}
-    ${makeSection('Season & Calendar', d.Season)}
-    ${makeSection('Crop Classification', d.Type)}
-    ${makeSection('Common Field Problems', d.Problems)}
-    ${makeSection('Organic Care & Biocontrol', d['Organic Care'])}
-    ${makeSection('Preventive Measures', d.Prevention)}
-    ${makeSection('Spray Formulation & Label Guide', d['Spray Info'])}
-    ${d['Tree Info'] ? makeSection('Tree Canopy & Spacing Info', d['Tree Info']) : ''}
-    ${makeSection('Optimal Sowing Months', d.Months)}
+    ${makeText('Crop Water Requirement (1 Acre)', waterFormatted)}
+    ${makeText('Crop Duration', d.Duration)}
+    ${makeText('Irrigation Schedule & Water Critical Stages', d.Irrigation)}
+    ${makeText('Suitable Soil Type & pH', d.Soil)}
+    ${makeList('Season & Sowing Windows', d.Season)}
+    ${makeList('Crop Classification', d.Type)}
+    ${makeList('Common Pests & Field Problems', d.Problems)}
+    ${makeList('Organic Care & Biocontrol Practices', d['Organic Care'])}
+    ${makeList('Preventive Agronomic Measures', d.Prevention)}
+    ${makeList('Spray Formulation & Label Guide', d['Spray Info'])}
+    ${d['Tree Info'] ? makeList('Tree Canopy & Spacing Info', d['Tree Info']) : ''}
+    ${makeList('Optimal Sowing Months (Tamil Nadu Calendar)', d.Months)}
   `;
 }
 
@@ -1148,13 +1347,13 @@ function highlightActiveCrop(name) {
     btn.classList.toggle('oled-active', isCurrent);
     if (isCurrent) {
       const hint = btn.querySelector('.crop-hint');
-      if (hint) hint.textContent = '📟 On OLED now';
+      if (hint) hint.textContent = '📟 Active on OLED';
     }
   });
 }
 
 // ============================================================
-// FARMER PROBLEMS TAB
+// FARMER PROBLEMS TAB (SYMPTOMS, CAUSES, SOLUTIONS, ORGANIC)
 // ============================================================
 
 function buildProblems() {
@@ -1166,34 +1365,44 @@ function buildProblems() {
 
   let filtered = problemKeys;
   if (problemFilterMode === 'rec' && pondTelemetry.recCrops.length > 0) {
-    // Collect all problem keywords relevant to recommended crops
-    const recCropProblems = [];
-    pondTelemetry.recCrops.forEach(cName => {
-      const c = CROPS[cName];
-      if (c && c.Problems) recCropProblems.push(...c.Problems.map(p => p.toLowerCase()));
-    });
-
-    // Always include pond water shortage and waterlogging
+    // Filter problems associated with eligible crops
     filtered = filtered.filter(pName => {
-      const pLow = pName.toLowerCase();
-      if (pLow.includes('pond') || pLow.includes('water') || pLow.includes('soil')) return true;
-      return recCropProblems.some(rcp => pLow.includes(rcp) || rcp.includes(pLow));
+      const p = PROBLEMS[pName];
+      if (!p || !p.crops) return true;
+      if (p.crops.includes('All Crops')) return true;
+      return p.crops.some(c => pondTelemetry.recCrops.includes(c));
     });
   }
 
   filtered.forEach(name => {
+    const p = PROBLEMS[name];
     const card = document.createElement('div');
     card.className = 'problem-card';
+
+    const cropsBadge = p.crops ? `<div style="font-size:11.5px; color:#047857; margin-bottom:8px; font-weight:600;">🎯 Relevant to: ${p.crops.join(', ')}</div>` : '';
+
+    const formatList = (title, items) => {
+      if (!items || !items.length) return '';
+      return `<div style="margin-top:8px;">
+        <strong style="font-size:12px; text-transform:uppercase; color:var(--text-muted);">${title}:</strong>
+        <ul style="margin:4px 0 0; padding-left:16px;">${items.map(x => `<li>${esc(x)}</li>`).join('')}</ul>
+      </div>`;
+    };
+
     card.innerHTML = `
       <div class="problem-title">${esc(name)}</div>
-      <ul>${PROBLEMS[name].map(x => `<li>${esc(x)}</li>`).join('')}</ul>
+      ${cropsBadge}
+      ${formatList('Symptoms', p.symptoms)}
+      ${formatList('Causes', p.causes)}
+      ${formatList('Field Solutions & Spray Advice', p.solutions)}
+      ${formatList('Organic Care & Biocontrol', p.organic)}
     `;
     grid.appendChild(card);
   });
 }
 
 // ============================================================
-// SEED RATE CALCULATOR TAB
+// SEED RATE & 1-ACRE POND WATER CALCULATOR TAB
 // ============================================================
 
 function updateCalculatorCropList() {
@@ -1204,10 +1413,9 @@ function updateCalculatorCropList() {
 
   const allNames = Object.keys(CROPS);
 
-  // Group recommended crops first
   if (pondTelemetry.recCrops.length > 0) {
     const optGroupRec = document.createElement('optgroup');
-    optGroupRec.label = '🌱 Recommended for Current Pond Level';
+    optGroupRec.label = '🌱 Eligible Crops for Selected Mode';
     pondTelemetry.recCrops.forEach(name => {
       const opt = document.createElement('option');
       opt.value = name;
@@ -1218,7 +1426,7 @@ function updateCalculatorCropList() {
   }
 
   const optGroupAll = document.createElement('optgroup');
-  optGroupAll.label = 'All Crops';
+  optGroupAll.label = 'All 16 Crops';
   allNames.forEach(name => {
     const opt = document.createElement('option');
     opt.value = name;
@@ -1234,27 +1442,44 @@ function updateCalculatorCropList() {
   } else {
     sel.value = 'Paddy';
   }
+
+  syncDefaultSeedRate();
+}
+
+function syncDefaultSeedRate() {
+  const sel = $('calcCrop');
+  const rateInput = $('calcRate');
+  if (!sel || !rateInput) return;
+  const crop = sel.value;
+  const cData = CROPS[crop];
+  if (cData && cData.SeedRate_1Acre) {
+    rateInput.value = cData.SeedRate_1Acre;
+  }
 }
 
 function setupCalculator() {
   const calcBtn = $('calcBtn');
   const calcResult = $('calcResult');
+  const sel = $('calcCrop');
   if (!calcBtn) return;
 
+  if (sel) {
+    sel.addEventListener('change', syncDefaultSeedRate);
+  }
+
   calcBtn.addEventListener('click', () => {
-    const area  = parseFloat($('calcArea').value);
+    const area  = parseFloat($('calcArea').value) || 1.0;
     const rate  = parseFloat($('calcRate').value);
     const crop  = $('calcCrop').value;
 
-    if (isNaN(area) || isNaN(rate) || area <= 0 || rate <= 0) {
-      calcResult.innerHTML = '<span class="calc-error">⚠ Please enter valid area and rate values.</span>';
+    if (isNaN(rate) || rate <= 0) {
+      calcResult.innerHTML = '<span class="calc-error">⚠ Please enter a valid seed rate.</span>';
       return;
     }
 
     const total = (area * rate).toFixed(2);
-    const unit  = (crop === 'Mango' || crop === 'Coconut') ? 'trees (canopy-based)' : 'kg seed';
+    const unit  = (crop === 'Mango' || crop === 'Coconut') ? 'trees / palms' : (crop === 'Sugarcane' ? 'setts' : 'kg seed');
 
-    // Calculate crop water requirement for this acreage
     let waterInfo = '';
     const cropData = CROPS[crop];
     if (cropData && cropData.WaterReq_L) {
@@ -1262,15 +1487,18 @@ function setupCalculator() {
       const cropM3 = (cropLitres / 1000).toFixed(0);
       const pondAvailable = pondTelemetry.waterLitres;
       let pondCompare = '';
-      if (pondAvailable > 0) {
+
+      if (pondTelemetry.mode === 'pond' && pondAvailable > 0) {
         const canSustain = pondAvailable >= cropLitres;
         pondCompare = canSustain
-          ? `<div class="calc-row" style="color:#047857;"><span>Pond Water Adequacy</span><strong>✔ Pond water sufficient (${(pondAvailable - cropLitres).toLocaleString()} L surplus)</strong></div>`
-          : `<div class="calc-row" style="color:#dc2626;"><span>Pond Water Adequacy</span><strong>⚠ Deficit of ${(cropLitres - pondAvailable).toLocaleString()} L from current pond</strong></div>`;
+          ? `<div class="calc-row" style="color:#047857;"><span>Pond Water Adequacy</span><strong>✔ Usable pond water sufficient (${(pondAvailable - cropLitres).toLocaleString()} L surplus)</strong></div>`
+          : `<div class="calc-row" style="color:#dc2626;"><span>Pond Water Adequacy</span><strong>⚠ Deficit of ${(cropLitres - pondAvailable).toLocaleString()} L from current pond storage</strong></div>`;
+      } else if (pondTelemetry.mode === 'default') {
+        pondCompare = '<div class="calc-row" style="color:#0284c7;"><span>Mode</span><strong>Default Seasonal Recommendation Mode</strong></div>';
       }
 
       waterInfo = `
-        <div class="calc-row"><span>Crop Water Need</span><strong>${cropLitres.toLocaleString()} L (~${cropM3} m³)</strong></div>
+        <div class="calc-row"><span>Crop Water Demand (${area} Acre)</span><strong>${cropLitres.toLocaleString()} L (~${cropM3} m³)</strong></div>
         ${pondCompare}
       `;
     }
@@ -1278,9 +1506,9 @@ function setupCalculator() {
     calcResult.innerHTML = `
       <div class="calc-answer">
         <div class="calc-row"><span>Crop</span><strong>${esc(crop)}</strong></div>
-        <div class="calc-row"><span>Area / Canopy</span><strong>${area} acres</strong></div>
+        <div class="calc-row"><span>Field Area</span><strong>${area} Acre (1-Acre Pond Setup)</strong></div>
         <div class="calc-row"><span>Seed Rate</span><strong>${rate} ${unit}/acre</strong></div>
-        <div class="calc-row total-row"><span>Total Seed Required</span><strong>${total} ${unit}</strong></div>
+        <div class="calc-row total-row"><span>Total Requirement</span><strong>${total} ${unit}</strong></div>
         ${waterInfo}
       </div>
     `;
@@ -1290,13 +1518,12 @@ function setupCalculator() {
 }
 
 // ============================================================
-// LIVE DISPLAY TAB — render incoming BLE data
+// LIVE DISPLAY & AUTOMATIC TAB SYNCHRONIZATION
 // ============================================================
 
 function renderLiveScreen(data) {
-  /* data = { s: "SCREEN NAME", l: ["line1", "line2", ...], ... } */
   const lines = Array.isArray(data.l) ? data.l : [];
-  const screen = data.s || '';
+  const screen = (data.s || '').trim();
 
   // Update status bar
   const liveTitle = $('liveScreenTitle');
@@ -1305,25 +1532,23 @@ function renderLiveScreen(data) {
   const liveTime = $('liveScreenTime');
   if (liveTime) liveTime.textContent = new Date().toLocaleTimeString();
 
-  // Render lines
+  // Render lines in Kiosk
   const container = $('liveLines');
-  if (!container) return;
-
-  if (!lines.length) {
-    container.innerHTML = '<div class="live-empty">Waiting for ESP32 screen update…</div>';
-    return;
+  if (container) {
+    if (!lines.length) {
+      container.innerHTML = '<div class="live-empty">Waiting for ESP32 screen update…</div>';
+    } else {
+      container.innerHTML = lines.map((text, i) => {
+        let cls = 'live-line';
+        if (i === 0 && text.length <= 20) cls += ' live-heading';
+        else if (text.startsWith('>')) cls += ' live-selected';
+        else if (text.match(/^[A-Z ]+:$/)) cls += ' live-label';
+        return `<div class="${cls}">${esc(text)}</div>`;
+      }).join('');
+    }
   }
 
-  // Classify lines into heading / selected / normal
-  container.innerHTML = lines.map((text, i) => {
-    let cls = 'live-line';
-    if (i === 0 && text.length <= 20) cls += ' live-heading';
-    else if (text.startsWith('>')) cls += ' live-selected';
-    else if (text.match(/^[A-Z ]+:$/)) cls += ' live-label';
-    return `<div class="${cls}">${esc(text)}</div>`;
-  }).join('');
-
-  // Detect active crop from visible lines or payload
+  // Active crop identification
   let activeCrop = data.cc || '';
   if (!activeCrop) {
     const visible = lines.join(' ').toLowerCase();
@@ -1332,18 +1557,38 @@ function renderLiveScreen(data) {
     });
   }
 
-  // Update overview stat cards
   const screenName = $('statScreen');
   if (screenName) screenName.textContent = screen || '—';
 
   const activeCropEl = $('statCrop');
   if (activeCropEl) activeCropEl.textContent = activeCrop || '—';
 
-  // Highlight crop in library
   if (activeCrop) highlightActiveCrop(activeCrop);
 
-  // Update pond telemetry UI
+  // Update Telemetry UI
   updatePondTelemetryUI(data);
+
+  // ════════════════════════════════════════════════════════
+  // AUTOMATIC OLED -> WEBSITE TAB SYNCHRONIZATION
+  // ════════════════════════════════════════════════════════
+  const sUpper = screen.toUpperCase();
+  if (sUpper !== lastScreenName) {
+    lastScreenName = sUpper;
+
+    if (sUpper.includes('CROP LIBRARY') || sUpper.includes('SUITABLE')) {
+      switchTab('tab-crops');
+    } else if (sUpper.includes('FARMER PROBLEMS') || sUpper.includes('PROBLEMS')) {
+      switchTab('tab-problems');
+    } else if (sUpper.includes('POND LEVEL')) {
+      switchTab('tab-overview');
+    }
+
+    // If OLED opened a specific crop guide, automatically select it on website
+    if (activeCrop && CROPS[activeCrop]) {
+      switchTab('tab-crops');
+      selectCrop(activeCrop);
+    }
+  }
 
   frameCount++;
   const fc = $('frameCount');
@@ -1352,24 +1597,14 @@ function renderLiveScreen(data) {
 
 // ============================================================
 // RELIABLE BINARY PACKET PROTOCOL & REASSEMBLY
-//
-// Header (5 bytes):
-//   [0]: 0xFA (magic 1)
-//   [1]: 0x72 (magic 2: text-based JSON protocol)
-//   [2]: msgId (0..255)
-//   [3]: pktIdx (0..totalPkts-1)
-//   [4]: totalPkts (1..255)
-//   [5..N]: payload data bytes (never decoded as UTF-8 until reassembled)
 // ============================================================
 
 const MAGIC_0 = 0xFA;
 const MAGIC_1 = 0x72; // Protocol identifier for text-based JSON mirror
 const HEADER_SIZE = 5;
 
-// Active message assemblers: msgId -> { totalPkts, fragments: Map(pktIdx -> Uint8Array), timestamp }
 const activeAssemblers = new Map();
 
-// Diagnostics / Debug tracking
 const debugStats = {
   packetsReceived: 0,
   messagesCompleted: 0,
@@ -1438,7 +1673,6 @@ function handleNotification(event) {
   const hex = Array.from(bytes).map(b => b.toString(16).padStart(2, '0').toUpperCase()).join(' ');
   debugStats.lastHex = hex;
 
-  // 1. Verify Minimum Size (5 header bytes + at least 1 byte data)
   if (bytes.length < HEADER_SIZE + 1) {
     debugStats.jsonErrors++;
     debugStats.lastError = `Packet too small (${bytes.length} bytes): ${hex}`;
@@ -1446,7 +1680,6 @@ function handleNotification(event) {
     return;
   }
 
-  // 2. Verify Magic Header [0xFA, 0x72]
   if (bytes[0] !== MAGIC_0 || bytes[1] !== MAGIC_1) {
     debugStats.jsonErrors++;
     debugStats.lastError = `Ignored non-protocol packet: Header [${bytes[0].toString(16).toUpperCase()}, ${bytes[1].toString(16).toUpperCase()}]. Expected [FA, 72].`;
@@ -1454,14 +1687,12 @@ function handleNotification(event) {
     return;
   }
 
-  // 3. Extract reliable packet identification
   const msgId = bytes[2];
   const pktIdx = bytes[3];
   const totalPkts = bytes[4];
-  const chunkData = bytes.slice(HEADER_SIZE); // Raw binary slice — DO NOT decode as UTF-8 yet!
+  const chunkData = bytes.slice(HEADER_SIZE);
   debugStats.lastMsgId = msgId;
 
-  // Validate packet bounds
   if (totalPkts === 0 || pktIdx >= totalPkts) {
     debugStats.jsonErrors++;
     debugStats.lastError = `Corrupt header: pkt ${pktIdx} >= total ${totalPkts}`;
@@ -1471,7 +1702,6 @@ function handleNotification(event) {
 
   const now = Date.now();
 
-  // 4. Prune stale assemblers older than 2500ms
   for (const [id, asm] of activeAssemblers.entries()) {
     if (now - asm.timestamp > 2500) {
       debugStats.droppedIncomplete++;
@@ -1479,7 +1709,6 @@ function handleNotification(event) {
     }
   }
 
-  // 5. Fetch or create assembler for this message
   let asm = activeAssemblers.get(msgId);
   if (!asm) {
     asm = {
@@ -1490,15 +1719,12 @@ function handleNotification(event) {
     activeAssemblers.set(msgId, asm);
   }
 
-  // Store binary fragment (idempotent: safely handles duplicate & out-of-order packets)
   asm.fragments.set(pktIdx, chunkData);
   updateDebugUI(hex, pktIdx, totalPkts);
 
-  // 6. When all packets for this message have arrived, assemble
   if (asm.fragments.size === asm.totalPkts) {
     activeAssemblers.delete(msgId);
 
-    // Calculate total buffer length
     let totalLength = 0;
     for (let i = 0; i < asm.totalPkts; i++) {
       const fragment = asm.fragments.get(i);
@@ -1511,7 +1737,6 @@ function handleNotification(event) {
       totalLength += fragment.length;
     }
 
-    // Allocate single contiguous byte buffer
     const completeBytes = new Uint8Array(totalLength);
     let offset = 0;
     for (let i = 0; i < asm.totalPkts; i++) {
@@ -1520,7 +1745,6 @@ function handleNotification(event) {
       offset += fragment.length;
     }
 
-    // 7. Decode the complete reassembled message as UTF-8
     let jsonString = '';
     try {
       jsonString = new TextDecoder('utf-8', { fatal: true }).decode(completeBytes);
@@ -1531,7 +1755,6 @@ function handleNotification(event) {
       return;
     }
 
-    // 8. Parse JSON
     let parsed;
     try {
       parsed = JSON.parse(jsonString);
@@ -1542,7 +1765,6 @@ function handleNotification(event) {
       return;
     }
 
-    // 9. Verify schema structure: { s: string, l: array }
     if (!parsed || typeof parsed !== 'object' || typeof parsed.s !== 'string' || !Array.isArray(parsed.l)) {
       debugStats.jsonErrors++;
       debugStats.lastError = 'Invalid schema: expected {s:string, l:string[]}';
@@ -1550,7 +1772,6 @@ function handleNotification(event) {
       return;
     }
 
-    // 10. Schema verified! Render to modern UI
     debugStats.messagesCompleted++;
     debugStats.lastCompletedMsgId = msgId;
     debugStats.lastSyncTime = new Date().toLocaleTimeString();
@@ -1617,11 +1838,10 @@ async function connectBLE() {
     const service = await bleServer.getPrimaryService(BLE_SERVICE_UUID);
     bleCharacteristic = await service.getCharacteristic(BLE_CHARACTERISTIC_UUID);
 
-    // Subscribe to notifications
     await bleCharacteristic.startNotifications();
     bleCharacteristic.addEventListener('characteristicvaluechanged', handleNotification);
 
-    setStatus('connected', 'Connected to FARMER ATI. Waiting for live screen...');
+    setStatus('connected', 'Connected to FARMER ATI. Synchronized with ESP32.');
     $('connectButton').style.display = 'none';
     $('disconnectButton').style.display = 'inline-flex';
 
@@ -1660,7 +1880,6 @@ function onDisconnected() {
   $('connectButton').style.display = 'inline-flex';
   $('disconnectButton').style.display = 'none';
 
-  // Auto-reconnect after 2 seconds
   setTimeout(async () => {
     if (!bleDevice) return;
     try {
@@ -1758,7 +1977,6 @@ buildProblems();
 setupCalculator();
 setStatus('idle');
 
-// Check Bluetooth availability
 if (!navigator.bluetooth) {
   $('connectionMessage').textContent =
     '⚠ Web Bluetooth is not available. Please use Google Chrome on Android or desktop Chrome with Bluetooth enabled.';
