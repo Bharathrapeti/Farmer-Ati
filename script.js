@@ -1177,33 +1177,33 @@ function switchTab(tabId) {
 }
 
 // Ensure tab-bar starts at Overview (scrollLeft = 0) and supports drag scrolling
-const tabBarEl = document.querySelector('.tab-bar');
-if (tabBarEl) {
+const scrollerEl = document.querySelector('.tab-bar-scroller') || document.querySelector('.tab-bar');
+if (scrollerEl) {
   let isDown = false;
   let startX = 0;
   let sLeft = 0;
 
-  tabBarEl.addEventListener('mousedown', (e) => {
+  scrollerEl.addEventListener('mousedown', (e) => {
     isDown = true;
-    startX = e.pageX - tabBarEl.offsetLeft;
-    sLeft = tabBarEl.scrollLeft;
+    startX = e.pageX - scrollerEl.offsetLeft;
+    sLeft = scrollerEl.scrollLeft;
   });
 
-  tabBarEl.addEventListener('mouseleave', () => { isDown = false; });
-  tabBarEl.addEventListener('mouseup', () => { isDown = false; });
+  scrollerEl.addEventListener('mouseleave', () => { isDown = false; });
+  scrollerEl.addEventListener('mouseup', () => { isDown = false; });
 
-  tabBarEl.addEventListener('mousemove', (e) => {
+  scrollerEl.addEventListener('mousemove', (e) => {
     if (!isDown) return;
-    const x = e.pageX - tabBarEl.offsetLeft;
+    const x = e.pageX - scrollerEl.offsetLeft;
     const walk = (x - startX);
     if (Math.abs(walk) > 5) {
       e.preventDefault();
-      tabBarEl.scrollLeft = sLeft - walk;
+      scrollerEl.scrollLeft = sLeft - walk;
     }
   });
 
   // Reset scroll to 0 on initial page load so Overview tab is always front & visible
-  tabBarEl.scrollLeft = 0;
+  scrollerEl.scrollLeft = 0;
 }
 
 // ============================================================

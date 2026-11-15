@@ -31,15 +31,17 @@
 </header>
 
 <!-- ══════════════════════════════════════════════
-     TAB SELECTION BAR
+     TAB SELECTION BAR (SMOOTH HORIZONTAL SCROLL DOCK)
 ═══════════════════════════════════════════════ -->
-<nav class="tab-bar">
-  <button class="tab-button active" data-tab="tab-overview">Overview</button>
-  <button class="tab-button" data-tab="tab-live">📟 Live Display</button>
-  <button class="tab-button" data-tab="tab-crops">Crop Library</button>
-  <button class="tab-button" data-tab="tab-problems">Farmer Problems</button>
-  <button class="tab-button" data-tab="tab-calculator">Seed Calculator</button>
-  <button class="tab-button" data-tab="tab-nutrients">🌿 Nutrient Care</button>
+<nav class="tab-bar-scroller" id="tabBarScroller" aria-label="Main Navigation">
+  <div class="tab-bar">
+    <button class="tab-button active" data-tab="tab-overview">Overview</button>
+    <button class="tab-button" data-tab="tab-live">📟 Live Display</button>
+    <button class="tab-button" data-tab="tab-crops">Crop Library</button>
+    <button class="tab-button" data-tab="tab-problems">Farmer Problems</button>
+    <button class="tab-button" data-tab="tab-calculator">Seed Calculator</button>
+    <button class="tab-button" data-tab="tab-nutrients">🌿 Nutrient Care</button>
+  </div>
 </nav>
 
 <main class="main-shell">
