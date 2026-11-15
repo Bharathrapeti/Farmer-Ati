@@ -37,6 +37,30 @@ let lastScreenName    = '';
 const $  = id => document.getElementById(id);
 const $$ = sel => document.querySelectorAll(sel);
 
+// ── Specific Crop Icons & Emojis ─────────────────────────────
+const CROP_ICONS = {
+  "Paddy": "🌾",
+  "Groundnut": "🥜",
+  "Black Gram": "🫘",
+  "Green Gram": "🫛",
+  "Chilli": "🌶️",
+  "Tomato": "🍅",
+  "Brinjal": "🍆",
+  "Onion": "🧅",
+  "Maize": "🌽",
+  "Ragi": "🌾",
+  "Cotton": "☁️",
+  "Sesame": "🫘",
+  "Bhendi": "🥒",
+  "Sugarcane": "🎋",
+  "Mango": "🥭",
+  "Coconut": "🥥"
+};
+
+function getCropIcon(name) {
+  return CROP_ICONS[name] || "🌱";
+}
+
 // ── 16 Complete Crops Agronomy Database ───────────────────────
 const CROPS = {
   "Paddy": {
@@ -1226,7 +1250,7 @@ function updatePondTelemetryUI(data) {
         const crop = CROPS[name];
         const waterStr = crop && crop.WaterReq_L ? `${(crop.WaterReq_L / 1000000).toFixed(1)}M L/ac` : '';
         return `<span class="crop-chip" data-crop="${esc(name)}">
-          <span>🌱 ${esc(name)}</span>
+          <span>${getCropIcon(name)} ${esc(name)}</span>
           ${waterStr ? `<span class="chip-water">${waterStr}</span>` : ''}
         </span>`;
       }).join('');
@@ -1281,6 +1305,20 @@ function buildCropLibrary() {
     });
   }
 
+  // Sort so recommended crops based on pond level selection come first, followed by all remaining crops
+  if (pondTelemetry.recCrops && pondTelemetry.recCrops.length > 0) {
+    filtered.sort((a, b) => {
+      const aRec = pondTelemetry.recCrops.includes(a);
+      const bRec = pondTelemetry.recCrops.includes(b);
+      if (aRec && !bRec) return -1;
+      if (!aRec && bRec) return 1;
+      if (aRec && bRec) {
+        return pondTelemetry.recCrops.indexOf(a) - pondTelemetry.recCrops.indexOf(b);
+      }
+      return 0;
+    });
+  }
+
   if (filtered.length === 0) {
     grid.innerHTML = '<div class="muted" style="grid-column:1/-1; padding:20px; text-align:center;">No crops match your current filter.</div>';
     return;
@@ -1296,9 +1334,9 @@ function buildCropLibrary() {
     const waterStr = d.WaterReq_L ? `${(d.WaterReq_L / 1000000).toFixed(1)}M L/acre (${d.WaterDepth_mm || '--'}mm)` : '';
 
     btn.innerHTML = `
-      <span class="crop-name">${esc(name)}</span>
+      <span class="crop-name">${getCropIcon(name)} ${esc(name)}</span>
       ${waterStr ? `<span class="crop-water-pill">💧 ${waterStr}</span>` : ''}
-      <span class="crop-hint">${isRec ? '🌱 Eligible for Mode' : 'Cultivation Guide'}</span>
+      <span class="crop-hint">${isRec ? 'Eligible for Mode' : 'Cultivation Guide'}</span>
     `;
     btn.addEventListener('click', () => selectCrop(name));
     grid.appendChild(btn);
@@ -1347,8 +1385,8 @@ function renderCropDetail(name) {
 
   detail.innerHTML = `
     <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
-      <h3 class="detail-crop-title" style="margin:0;">🌱 ${esc(name)}</h3>
-      ${isRec ? '<span class="pond-mode-badge badge-pond">🌱 Eligible in Active Mode</span>' : '<span class="pond-mode-badge badge-default">General Crop Library</span>'}
+      <h3 class="detail-crop-title" style="margin:0;">${getCropIcon(name)} ${esc(name)}</h3>
+      ${isRec ? '<span class="pond-mode-badge badge-pond">Eligible in Active Mode</span>' : '<span class="pond-mode-badge badge-default">General Crop Library</span>'}
     </div>
     ${makeText('Crop Water Requirement (1 Acre)', waterFormatted)}
     ${makeText('Crop Duration', d.Duration)}
@@ -1444,7 +1482,7 @@ function updateCalculatorCropList() {
     pondTelemetry.recCrops.forEach(name => {
       const opt = document.createElement('option');
       opt.value = name;
-      opt.textContent = `🌱 ${name}`;
+      opt.textContent = `${getCropIcon(name)} ${name}`;
       optGroupRec.appendChild(opt);
     });
     sel.appendChild(optGroupRec);
@@ -1455,7 +1493,7 @@ function updateCalculatorCropList() {
   allNames.forEach(name => {
     const opt = document.createElement('option');
     opt.value = name;
-    opt.textContent = name;
+    opt.textContent = `${getCropIcon(name)} ${name}`;
     optGroupAll.appendChild(opt);
   });
   sel.appendChild(optGroupAll);

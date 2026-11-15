@@ -48,21 +48,23 @@
 ═══════════════════════════════════════════════ -->
 <section class="tab-page active" id="tab-overview">
 
-  <!-- Bluetooth Connection Card -->
-  <div class="card connect-card">
-    <div class="connect-left">
-      <div class="connect-title">Bluetooth Connection</div>
-      <div class="connect-message" id="connectionMessage">
-        Click <strong>Connect to FARMER ATI</strong> to link your Android tablet via Bluetooth Low Energy.
+  <!-- Bluetooth Connection Widget (Compact Aside) -->
+  <div class="connect-bar-wrapper">
+    <div class="card connect-card">
+      <div class="connect-left">
+        <div class="connect-title">Bluetooth Connection</div>
+        <div class="connect-message" id="connectionMessage">
+          Click <strong>Connect</strong> to link Android tablet via BLE.
+        </div>
       </div>
-    </div>
-    <div class="connect-buttons">
-      <button class="btn btn-connect" id="connectButton">
-        <span>⚡</span> Connect to FARMER ATI
-      </button>
-      <button class="btn btn-disconnect" id="disconnectButton" style="display:none">
-        Disconnect
-      </button>
+      <div class="connect-buttons">
+        <button class="btn btn-connect" id="connectButton">
+          <span>⚡</span> Connect
+        </button>
+        <button class="btn btn-disconnect" id="disconnectButton" style="display:none">
+          Disconnect
+        </button>
+      </div>
     </div>
   </div>
 
@@ -125,25 +127,6 @@
     </div>
   </div>
 
-  <!-- Realtime Stat Cards -->
-  <div class="stat-grid">
-    <div class="stat-card">
-      <div class="stat-label">BLE Status</div>
-      <div class="stat-value" id="statConnection">—</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Active Crop</div>
-      <div class="stat-value" id="statCrop">—</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Current Screen</div>
-      <div class="stat-value" id="statScreen">—</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Frames Received</div>
-      <div class="stat-value" id="frameCount">0</div>
-    </div>
-  </div>
 
   <!-- Keypad & Project Info Grid -->
   <div class="info-grid">
