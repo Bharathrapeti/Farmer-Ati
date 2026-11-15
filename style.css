@@ -1228,3 +1228,342 @@ a {
   .crop-grid { grid-template-columns: repeat(2, 1fr); }
   .diagnostics-summary { padding: 12px 14px; }
 }
+
+
+/* ══════════════════════════════════════════════
+   INTELLIGENT POND TELEMETRY & SEASONAL RECOMMENDATIONS
+═══════════════════════════════════════════════ */
+
+.pond-telemetry-card {
+  background: linear-gradient(145deg, #fdfcf9 0%, #f4efe4 100%);
+  border: 1.5px solid rgba(34, 197, 94, 0.35);
+  box-shadow: 0 10px 30px -6px rgba(13, 40, 24, 0.12);
+  margin-bottom: 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+.pond-telemetry-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #10b981, #22c55e, #3b82f6, #06b6d4);
+}
+
+.pond-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.pond-title-group {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.pond-icon-bubble {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(135deg, rgba(6, 182, 212, 0.15) 0%, rgba(34, 197, 94, 0.2) 100%);
+  border: 1px solid rgba(6, 182, 212, 0.3);
+  display: grid;
+  place-items: center;
+  font-size: 26px;
+  box-shadow: 0 4px 12px rgba(6, 182, 212, 0.15);
+  flex-shrink: 0;
+}
+
+.pond-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--forest-dark);
+}
+
+.pond-subtitle {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-top: 3px;
+}
+
+.pond-mode-badge {
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.25s ease;
+}
+
+.badge-pond {
+  background: rgba(16, 185, 129, 0.18);
+  color: #065f46;
+  border: 1.5px solid #10b981;
+}
+
+.badge-default {
+  background: rgba(234, 179, 8, 0.18);
+  color: #854d0e;
+  border: 1.5px solid #eab308;
+}
+
+/* Metric Grid */
+.pond-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+.pond-card {
+  background: var(--cream-pure);
+  border: 1px solid var(--cream-border);
+  border-radius: var(--radius-sm);
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: var(--card-shadow);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.pond-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--pop-shadow);
+}
+
+.pond-card.highlight-card {
+  background: linear-gradient(145deg, #f0fdf4 0%, #dcfce7 100%);
+  border-color: rgba(34, 197, 94, 0.4);
+}
+
+.pond-label {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+.pond-value {
+  font-family: var(--font-display);
+  font-size: 1.65rem;
+  font-weight: 800;
+  color: var(--forest-black);
+  line-height: 1.2;
+}
+
+.pond-value-text {
+  font-family: var(--font-display);
+  font-size: 1.22rem;
+  font-weight: 700;
+  color: var(--forest-mid);
+  line-height: 1.3;
+}
+
+.pond-subtext {
+  font-size: 11.5px;
+  color: var(--text-dim);
+  margin-top: 6px;
+}
+
+/* Water Level Bar */
+.pond-progress-bar {
+  width: 100%;
+  height: 12px;
+  background: #e2e8f0;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-top: 10px;
+  border: 1px solid rgba(0,0,0,0.06);
+}
+
+.pond-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #38bdf8 0%, #2563eb 50%, #10b981 100%);
+  border-radius: 10px;
+  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Recommended Crops Section */
+.pond-rec-section {
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid var(--cream-border);
+  border-radius: var(--radius-sm);
+  padding: 16px 18px;
+}
+
+.pond-rec-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.pond-rec-title {
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--forest-dark);
+}
+
+.pond-rec-hint {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.pond-crop-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  min-height: 38px;
+  align-items: center;
+}
+
+.crop-chip {
+  background: linear-gradient(135deg, #166534 0%, #15803d 100%);
+  color: #f0fdf4;
+  padding: 7px 15px;
+  border-radius: 20px;
+  font-size: 13.5px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(21, 128, 61, 0.25);
+  transition: all 0.2s ease;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.crop-chip:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 14px rgba(21, 128, 61, 0.35);
+  background: linear-gradient(135deg, #15803d 0%, #22c55e 100%);
+}
+
+.crop-chip .chip-water {
+  font-size: 11px;
+  background: rgba(0, 0, 0, 0.25);
+  padding: 2px 7px;
+  border-radius: 10px;
+  color: #dcfce7;
+}
+
+.chip-empty {
+  color: var(--text-muted);
+  font-size: 13px;
+  font-style: italic;
+}
+
+/* ══════════════════════════════════════════════
+   FILTER BARS FOR CROP LIBRARY & PROBLEMS
+═══════════════════════════════════════════════ */
+
+.library-filter-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin: 18px 0 20px;
+  flex-wrap: wrap;
+}
+
+.filter-btn-group {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.filter-btn {
+  background: var(--cream-pure);
+  border: 1.5px solid var(--cream-border);
+  color: var(--text-body);
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.filter-btn:hover {
+  border-color: var(--emerald-bright);
+  background: var(--emerald-tint);
+}
+
+.filter-btn.active {
+  background: var(--forest-dark);
+  color: var(--cream-pure);
+  border-color: var(--forest-dark);
+  box-shadow: 0 3px 10px rgba(13, 40, 24, 0.2);
+}
+
+.filter-search-box {
+  position: relative;
+  min-width: 240px;
+  flex-grow: 1;
+  max-width: 360px;
+}
+
+.filter-search-box .search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 14px;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.crop-search-input {
+  width: 100%;
+  padding: 8px 14px 8px 34px;
+  border-radius: 20px;
+  border: 1.5px solid var(--cream-border);
+  background: var(--cream-pure);
+  font-family: inherit;
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.crop-search-input:focus {
+  border-color: var(--emerald-bright);
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15);
+}
+
+/* Crop Card Recommended Ribbon */
+.crop-btn.is-recommended {
+  border-color: #22c55e;
+  background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%);
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.15);
+}
+
+.crop-btn.is-recommended .crop-name::after {
+  content: " 🌱";
+  font-size: 13px;
+}
+
+.crop-water-pill {
+  font-size: 11px;
+  color: #047857;
+  font-weight: 600;
+  margin-top: 3px;
+  display: block;
+}

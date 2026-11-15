@@ -66,6 +66,66 @@
     </div>
   </div>
 
+  <!-- ══════════════════════════════════════════════
+       POND WATER & SEASONAL RECOMMENDATION TELEMETRY
+  ═══════════════════════════════════════════════ -->
+  <div class="card pond-telemetry-card" id="pondTelemetryCard">
+    <div class="pond-header">
+      <div class="pond-title-group">
+        <div class="pond-icon-bubble">💧</div>
+        <div>
+          <h2 class="pond-title">Intelligent Pond-Water &amp; Seasonal Recommendation</h2>
+          <div class="pond-subtitle">1-Acre Rectangular Farm Pond (4,046.86 m&sup2;) &bull; Real-Time Telemetry &amp; Advisory</div>
+        </div>
+      </div>
+      <div class="pond-mode-badge badge-default" id="pondModeBadge">Default Seasonal Level</div>
+    </div>
+
+    <!-- Main Pond Metric Grid -->
+    <div class="pond-grid">
+      <!-- Water Depth -->
+      <div class="pond-card">
+        <div class="pond-label">Current Water Depth</div>
+        <div class="pond-value" id="pondDepth">--</div>
+        <div class="pond-subtext" id="pondSensorDist">Sensor to bottom: 5.0m &bull; Echo: --</div>
+      </div>
+
+      <!-- Usable Water Volume -->
+      <div class="pond-card highlight-card">
+        <div class="pond-label">Available Usable Water</div>
+        <div class="pond-value" id="pondLitres">--</div>
+        <div class="pond-subtext" id="pondVolumeM3">75% Irrig. Eff. &bull; Dead Storage 0.3m</div>
+      </div>
+
+      <!-- Pond Storage Capacity Gauge -->
+      <div class="pond-card">
+        <div class="pond-label">Storage Capacity Filled</div>
+        <div class="pond-value" id="pondPct">--</div>
+        <div class="pond-progress-bar">
+          <div class="pond-progress-fill" id="pondFillBar" style="width: 0%"></div>
+        </div>
+      </div>
+
+      <!-- Month & Season -->
+      <div class="pond-card">
+        <div class="pond-label">Current Month &amp; Season</div>
+        <div class="pond-value-text" id="pondMonthSeason">--</div>
+        <div class="pond-subtext">Tamil Nadu Agro-Climatic Calendar</div>
+      </div>
+    </div>
+
+    <!-- Recommended Crops List / Chips -->
+    <div class="pond-rec-section">
+      <div class="pond-rec-header">
+        <div class="pond-rec-title">Recommended Suitable Crops (<span id="pondCropCount">0</span>)</div>
+        <div class="pond-rec-hint">Automatically filtered by available pond water volume and seasonal sowing calendar</div>
+      </div>
+      <div class="pond-crop-chips" id="pondCropList">
+        <span class="chip-empty">Connect via Bluetooth Low Energy to sync pond telemetry and crop recommendations</span>
+      </div>
+    </div>
+  </div>
+
   <!-- Realtime Stat Cards -->
   <div class="stat-grid">
     <div class="stat-card">
@@ -267,6 +327,17 @@
   <div class="card">
     <h2>Crop Agronomy Library</h2>
     <p class="muted">All crops in the FARMER ATI agronomy database. The <span class="oled-badge">On OLED</span> badge marks the crop currently active on the ESP32.</p>
+        <div class="library-filter-bar">
+      <div class="filter-btn-group">
+        <button class="filter-btn active" id="btnFilterAllCrops" data-filter="all">All Crops (<span id="countAllCrops">16</span>)</button>
+        <button class="filter-btn" id="btnFilterRecCrops" data-filter="rec">🌱 Recommended Only (<span id="countRecCrops">0</span>)</button>
+      </div>
+      <div class="filter-search-box">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="cropSearchInput" placeholder="Filter crops by name, season, soil..." class="crop-search-input">
+      </div>
+    </div>
+
     <div class="crop-grid" id="cropGrid"></div>
     <div class="crop-detail" id="cropDetail">
       <div class="muted">Select any crop above to view its detailed cultivation and management guide.</div>
@@ -281,6 +352,13 @@
   <div class="card">
     <h2>Common Farmer Problems &amp; Practical Solutions</h2>
     <p class="muted">Expert guidance from the FARMER ATI agricultural database, mirroring the ESP32 diagnostic guide.</p>
+        <div class="library-filter-bar">
+      <div class="filter-btn-group">
+        <button class="filter-btn active" id="btnFilterAllProblems" data-filter="all">All 10 Field Problems</button>
+        <button class="filter-btn" id="btnFilterRecProblems" data-filter="rec">🐛 Problems for Recommended Crops</button>
+      </div>
+    </div>
+
     <div class="problem-grid" id="problemGrid"></div>
   </div>
 </section>
