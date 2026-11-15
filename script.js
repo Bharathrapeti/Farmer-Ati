@@ -3113,212 +3113,159 @@ function buildNutrientCare() {
 
 
 // ============================================================
-// AUTOMATIC LIVE WEATHER SERVICE (OPEN-METEO)
+// COMPACT LIVE WEATHER WIDGET (OPEN-METEO)
 // ============================================================
 
-const WMO_WEATHER_CODES = {
-  0:  { label: "Clear Sky", icon: "☀️" },
-  1:  { label: "Mainly Clear", icon: "🌤️" },
-  2:  { label: "Partly Cloudy", icon: "⛅" },
-  3:  { label: "Overcast / Cloudy", icon: "☁️" },
-  45: { label: "Foggy", icon: "🌫️" },
-  48: { label: "Depositing Rime Fog", icon: "🌫️" },
-  51: { label: "Light Drizzle", icon: "🌦️" },
-  53: { label: "Moderate Drizzle", icon: "🌦️" },
-  55: { label: "Dense Drizzle", icon: "🌦️" },
-  56: { label: "Freezing Drizzle", icon: "🌧️" },
-  57: { label: "Heavy Freezing Drizzle", icon: "🌧️" },
-  61: { label: "Slight Rain", icon: "🌧️" },
-  63: { label: "Moderate Rain", icon: "🌧️" },
-  65: { label: "Heavy Rain", icon: "🌧️" },
-  66: { label: "Freezing Rain", icon: "🌧️" },
-  67: { label: "Heavy Freezing Rain", icon: "🌧️" },
-  71: { label: "Slight Snowfall", icon: "❄️" },
-  73: { label: "Moderate Snowfall", icon: "❄️" },
-  75: { label: "Heavy Snowfall", icon: "❄️" },
-  77: { label: "Snow Grains", icon: "❄️" },
-  80: { label: "Slight Rain Showers", icon: "🌦️" },
-  81: { label: "Moderate Rain Showers", icon: "🌧️" },
-  82: { label: "Violent Rain Showers", icon: "🌧️" },
-  85: { label: "Slight Snow Showers", icon: "🌨️" },
-  86: { label: "Heavy Snow Showers", icon: "🌨️" },
-  95: { label: "Thunderstorm", icon: "⛈️" },
-  96: { label: "Thunderstorm with Slight Hail", icon: "⛈️" },
-  99: { label: "Thunderstorm with Heavy Hail", icon: "⛈️" }
+const WMO_WEATHER_NAMES = {
+  0:  "Clear Sky",
+  1:  "Mainly Clear",
+  2:  "Partly Cloudy",
+  3:  "Cloudy",
+  45: "Foggy",
+  48: "Rime Fog",
+  51: "Light Drizzle",
+  53: "Drizzle",
+  55: "Dense Drizzle",
+  56: "Freezing Drizzle",
+  57: "Freezing Drizzle",
+  61: "Slight Rain",
+  63: "Moderate Rain",
+  65: "Heavy Rain",
+  66: "Freezing Rain",
+  67: "Freezing Rain",
+  71: "Slight Snow",
+  73: "Moderate Snow",
+  75: "Heavy Snow",
+  77: "Snow Grains",
+  80: "Rain Showers",
+  81: "Rain Showers",
+  82: "Heavy Showers",
+  85: "Snow Showers",
+  86: "Snow Showers",
+  95: "Thunderstorm",
+  96: "Thunderstorm",
+  99: "Thunderstorm"
 };
 
+function getSvgWeatherIcon(code) {
+  // Rain / Showers / Drizzle
+  if ([51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82].includes(code)) {
+    return `<svg viewBox="0 0 64 64" width="38" height="38" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M20 36a9 9 0 0 1 1.5-17.8 13 13 0 0 1 24.5 3.6A8.5 8.5 0 0 1 44 38H20a9 9 0 0 1 0-2z" fill="rgba(255,255,255,0.12)" stroke="#ffffff"/>
+      <line x1="22" y1="44" x2="19" y2="50" stroke="#ffffff" stroke-width="3"/>
+      <line x1="30" y1="44" x2="27" y2="50" stroke="#ffffff" stroke-width="3"/>
+      <line x1="38" y1="44" x2="35" y2="50" stroke="#ffffff" stroke-width="3"/>
+      <line x1="46" y1="44" x2="43" y2="50" stroke="#ffffff" stroke-width="3"/>
+    </svg>`;
+  }
+  // Clear sky
+  if (code === 0) {
+    return `<svg viewBox="0 0 64 64" width="38" height="38" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="32" cy="32" r="12" fill="rgba(255,255,255,0.15)" stroke="#ffffff"/>
+      <line x1="32" y1="8" x2="32" y2="14" stroke="#ffffff"/>
+      <line x1="32" y1="50" x2="32" y2="56" stroke="#ffffff"/>
+      <line x1="8" y1="32" x2="14" y2="32" stroke="#ffffff"/>
+      <line x1="50" y1="32" x2="56" y2="32" stroke="#ffffff"/>
+      <line x1="15" y1="15" x2="19" y2="19" stroke="#ffffff"/>
+      <line x1="45" y1="45" x2="49" y2="49" stroke="#ffffff"/>
+      <line x1="15" y1="49" x2="19" y2="45" stroke="#ffffff"/>
+      <line x1="45" y1="19" x2="49" y2="15" stroke="#ffffff"/>
+    </svg>`;
+  }
+  // Mainly clear / Partly cloudy
+  if ([1, 2].includes(code)) {
+    return `<svg viewBox="0 0 64 64" width="38" height="38" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="26" cy="24" r="8" fill="rgba(255,255,255,0.15)" stroke="#ffffff"/>
+      <line x1="26" y1="10" x2="26" y2="13" stroke="#ffffff"/>
+      <line x1="12" y1="24" x2="15" y2="24" stroke="#ffffff"/>
+      <line x1="16" y1="14" x2="18" y2="16" stroke="#ffffff"/>
+      <path d="M22 42h24a8 8 0 0 0 1.5-15.8 11 11 0 0 0-21.5 2.8A7 7 0 0 0 22 42z" fill="rgba(255,255,255,0.12)" stroke="#ffffff"/>
+    </svg>`;
+  }
+  // Thunderstorm
+  if ([95, 96, 99].includes(code)) {
+    return `<svg viewBox="0 0 64 64" width="38" height="38" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M20 36a9 9 0 0 1 1.5-17.8 13 13 0 0 1 24.5 3.6A8.5 8.5 0 0 1 44 38H20z" fill="rgba(255,255,255,0.12)" stroke="#ffffff"/>
+      <polyline points="33,38 27,47 34,47 29,56" stroke="#ffffff" stroke-width="3"/>
+    </svg>`;
+  }
+  // Snow
+  if ([71, 73, 75, 77, 85, 86].includes(code)) {
+    return `<svg viewBox="0 0 64 64" width="38" height="38" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M20 36a9 9 0 0 1 1.5-17.8 13 13 0 0 1 24.5 3.6A8.5 8.5 0 0 1 44 38H20z" fill="rgba(255,255,255,0.12)" stroke="#ffffff"/>
+      <circle cx="23" cy="46" r="2" fill="#ffffff"/>
+      <circle cx="32" cy="50" r="2" fill="#ffffff"/>
+      <circle cx="41" cy="46" r="2" fill="#ffffff"/>
+    </svg>`;
+  }
+  // Fog
+  if ([45, 48].includes(code)) {
+    return `<svg viewBox="0 0 64 64" width="38" height="38" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="16" y1="26" x2="48" y2="26" stroke="#ffffff"/>
+      <line x1="12" y1="34" x2="52" y2="34" stroke="#ffffff"/>
+      <line x1="18" y1="42" x2="46" y2="42" stroke="#ffffff"/>
+    </svg>`;
+  }
+  // Overcast / Cloudy
+  return `<svg viewBox="0 0 64 64" width="38" height="38" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M20 42h26a9 9 0 0 0 1.8-17.8 13 13 0 0 0-25.2 3.8A8 8 0 0 0 20 42z" fill="rgba(255,255,255,0.15)" stroke="#ffffff"/>
+  </svg>`;
+}
+
+function formatWeatherDate(d = new Date()) {
+  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  return `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+}
+
 const liveWeatherState = {
-  lat: null,
-  lon: null,
-  placeName: null,
-  data: null,
-  lastFetchTime: null,
-  isStale: false,
+  lat: 12.5043,
+  lon: 80.1656,
   timer: null
 };
 
 function initLiveWeather() {
-  const refreshBtn = $('weatherRefreshBtn');
-  const retryBtn = $('weatherRetryBtn');
-  const defaultBtn = $('weatherDefaultBtn');
+  // 1. Immediately format today's date
+  const dateEl = $('weatherCompactDate');
+  if (dateEl) {
+    dateEl.textContent = formatWeatherDate(new Date());
+  }
 
-  if (refreshBtn) {
-    refreshBtn.addEventListener('click', () => {
-      if (liveWeatherState.lat && liveWeatherState.lon) {
-        fetchOpenMeteoWeather(liveWeatherState.lat, liveWeatherState.lon, true);
-      } else {
-        requestLocationAndFetch();
-      }
+  // 2. Click on the right bubble to refresh live weather
+  const bubble = document.querySelector('.weather-glass-bubble');
+  if (bubble) {
+    bubble.addEventListener('click', () => {
+      fetchOpenMeteoWeather(liveWeatherState.lat, liveWeatherState.lon);
     });
   }
 
-  if (retryBtn) {
-    retryBtn.addEventListener('click', () => {
-      requestLocationAndFetch();
-    });
+  // 3. Silently request tablet GPS location
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        liveWeatherState.lat = pos.coords.latitude;
+        liveWeatherState.lon = pos.coords.longitude;
+        fetchOpenMeteoWeather(liveWeatherState.lat, liveWeatherState.lon);
+      },
+      (err) => {
+        // Fallback silently to default agro farm location
+        fetchOpenMeteoWeather(liveWeatherState.lat, liveWeatherState.lon);
+      },
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 300000 }
+    );
+  } else {
+    fetchOpenMeteoWeather(liveWeatherState.lat, liveWeatherState.lon);
   }
 
-  if (defaultBtn) {
-    defaultBtn.addEventListener('click', () => {
-      useDefaultWeatherLocation();
-    });
-  }
-
-  // Check cached coordinates in localStorage for instant display
-  const cachedLat = parseFloat(localStorage.getItem('farmer_weather_lat'));
-  const cachedLon = parseFloat(localStorage.getItem('farmer_weather_lon'));
-  const cachedPlace = localStorage.getItem('farmer_weather_place');
-
-  if (!isNaN(cachedLat) && !isNaN(cachedLon)) {
-    liveWeatherState.lat = cachedLat;
-    liveWeatherState.lon = cachedLon;
-    liveWeatherState.placeName = cachedPlace || `${cachedLat.toFixed(2)}°, ${cachedLon.toFixed(2)}°`;
-    updateWeatherLocationUI(liveWeatherState.placeName);
-    fetchOpenMeteoWeather(cachedLat, cachedLon);
-  }
-
-  // Request high-accuracy tablet location
-  requestLocationAndFetch();
-
-  // Set 15-minute automatic refresh loop
+  // 4. Auto-refresh every 15 minutes
   if (liveWeatherState.timer) clearInterval(liveWeatherState.timer);
   liveWeatherState.timer = setInterval(() => {
-    if (liveWeatherState.lat && liveWeatherState.lon) {
-      fetchOpenMeteoWeather(liveWeatherState.lat, liveWeatherState.lon);
-    }
+    fetchOpenMeteoWeather(liveWeatherState.lat, liveWeatherState.lon);
   }, 15 * 60 * 1000);
 }
 
-function requestLocationAndFetch() {
-  const loadingEl = $('weatherLoading');
-  const noticeEl = $('weatherNotice');
-  if (loadingEl && !liveWeatherState.data) loadingEl.style.display = 'flex';
-  if (noticeEl) noticeEl.style.display = 'none';
-
-  if (!navigator.geolocation) {
-    showWeatherNotice(
-      "Geolocation Not Supported",
-      "Your browser does not support automatic location detection. Click below to use default farm location.",
-      true
-    );
-    return;
-  }
-
-  navigator.geolocation.getCurrentPosition(
-    onGeoSuccess,
-    onGeoError,
-    { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }
-  );
-}
-
-function onGeoSuccess(position) {
-  const lat = position.coords.latitude;
-  const lon = position.coords.longitude;
-  liveWeatherState.lat = lat;
-  liveWeatherState.lon = lon;
-
-  try {
-    localStorage.setItem('farmer_weather_lat', lat);
-    localStorage.setItem('farmer_weather_lon', lon);
-  } catch (_) {}
-
-  reverseGeocode(lat, lon);
-  fetchOpenMeteoWeather(lat, lon);
-}
-
-function onGeoError(err) {
-  console.warn("[Weather] Geolocation error:", err);
-  // If we already have coordinates and data, do not disturb user with an error
-  if (liveWeatherState.lat && liveWeatherState.data) return;
-
-  let msg = "Allow browser location access on your Android tablet to see hyper-local live weather for your farm.";
-  if (err.code === 1) {
-    msg = "Location permission was denied. Click 'Grant & Retry' or use default farm location.";
-  } else if (err.code === 2) {
-    msg = "Location unavailable. Ensure GPS is enabled on your device, or use default farm location.";
-  } else if (err.code === 3) {
-    msg = "Location request timed out. Please retry or use default farm location.";
-  }
-
-  showWeatherNotice("Location Access Needed", msg, true);
-}
-
-function useDefaultWeatherLocation() {
-  const defaultLat = 12.5043;
-  const defaultLon = 80.1656;
-  const defaultPlace = "Kalpakkam, Tamil Nadu";
-
-  liveWeatherState.lat = defaultLat;
-  liveWeatherState.lon = defaultLon;
-  liveWeatherState.placeName = defaultPlace;
-
-  try {
-    localStorage.setItem('farmer_weather_lat', defaultLat);
-    localStorage.setItem('farmer_weather_lon', defaultLon);
-    localStorage.setItem('farmer_weather_place', defaultPlace);
-  } catch (_) {}
-
-  updateWeatherLocationUI(defaultPlace);
-  fetchOpenMeteoWeather(defaultLat, defaultLon);
-}
-
-async function reverseGeocode(lat, lon) {
-  try {
-    const url = `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`;
-    const res = await fetch(url);
-    if (!res.ok) throw new Error("Reverse geocode HTTP " + res.status);
-    const json = await res.json();
-
-    const parts = [];
-    if (json.city) parts.push(json.city);
-    else if (json.locality) parts.push(json.locality);
-
-    if (json.principalSubdivision) parts.push(json.principalSubdivision);
-    else if (json.countryName) parts.push(json.countryName);
-
-    const place = parts.length > 0 ? parts.join(', ') : `${lat.toFixed(2)}°, ${lon.toFixed(2)}°`;
-    liveWeatherState.placeName = place;
-
-    try {
-      localStorage.setItem('farmer_weather_place', place);
-    } catch (_) {}
-
-    updateWeatherLocationUI(place);
-  } catch (e) {
-    const cached = localStorage.getItem('farmer_weather_place');
-    const place = cached || `${lat.toFixed(2)}°N, ${lon.toFixed(2)}°E`;
-    liveWeatherState.placeName = place;
-    updateWeatherLocationUI(place);
-  }
-}
-
-function updateWeatherLocationUI(placeName) {
-  const el = $('weatherPlaceName');
-  if (el) el.textContent = placeName || 'Current Location';
-}
-
 function extractCurrentHourRainProbability(hourly) {
-  if (!hourly || !hourly.time || !hourly.precipitation_probability) return 0;
+  if (!hourly || !hourly.time || !hourly.precipitation_probability) return 10;
   const now = new Date();
   let closestIdx = 0;
   let minDiff = Infinity;
@@ -3333,121 +3280,53 @@ function extractCurrentHourRainProbability(hourly) {
   }
 
   const prob = hourly.precipitation_probability[closestIdx];
-  return typeof prob === 'number' ? Math.round(prob) : 0;
+  return typeof prob === 'number' ? Math.round(prob) : 10;
 }
 
-async function fetchOpenMeteoWeather(lat, lon, isManualClick = false) {
-  const refreshBtn = $('weatherRefreshBtn');
-  if (refreshBtn) refreshBtn.classList.add('spinning');
-
+async function fetchOpenMeteoWeather(lat, lon) {
   try {
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m&hourly=precipitation_probability&daily=temperature_2m_max,temperature_2m_min&timezone=auto`;
     const res = await fetch(url);
-    if (!res.ok) throw new Error(`Open-Meteo HTTP error: ${res.status}`);
+    if (!res.ok) return;
     const json = await res.json();
+    if (!json || !json.current) return;
 
-    if (!json || !json.current) throw new Error("Invalid Open-Meteo forecast payload");
-
-    liveWeatherState.data = json;
-    liveWeatherState.lastFetchTime = new Date();
-    liveWeatherState.isStale = false;
-
-    renderLiveWeatherUI(json);
-  } catch (err) {
-    console.warn("[Weather] Fetch error:", err);
-    if (liveWeatherState.data) {
-      // Mark as stale but preserve previous readings
-      liveWeatherState.isStale = true;
-      const staleBadge = $('weatherStaleBadge');
-      if (staleBadge) staleBadge.style.display = 'inline-block';
-    } else {
-      showWeatherNotice(
-        "Weather Service Offline",
-        "Could not retrieve live weather from Open-Meteo. Please check your internet connection.",
-        true
-      );
-    }
-  } finally {
-    if (refreshBtn) {
-      setTimeout(() => refreshBtn.classList.remove('spinning'), 600);
-    }
+    renderCompactWeatherUI(json);
+  } catch (_) {
+    // Retain default values on network errors silently
   }
 }
 
-function renderLiveWeatherUI(json) {
+function renderCompactWeatherUI(json) {
   const current = json.current || {};
   const daily = json.daily || {};
   const hourly = json.hourly || {};
 
-  const temp = Math.round(current.temperature_2m ?? 0);
-  const wCode = current.weather_code ?? 0;
-  const wInfo = WMO_WEATHER_CODES[wCode] || { label: "Fair Weather", icon: "🌤️" };
-  const humidity = Math.round(current.relative_humidity_2m ?? 0);
-  const windSpeed = Math.round(current.wind_speed_10m ?? 0);
+  const temp = Math.round(current.temperature_2m ?? 32);
+  const wCode = current.weather_code ?? 80;
+  const conditionName = WMO_WEATHER_NAMES[wCode] || "Rain Showers";
   const rainProb = extractCurrentHourRainProbability(hourly);
 
   const maxTemp = (daily.temperature_2m_max && daily.temperature_2m_max.length)
     ? Math.round(daily.temperature_2m_max[0])
-    : temp;
+    : 32;
   const minTemp = (daily.temperature_2m_min && daily.temperature_2m_min.length)
     ? Math.round(daily.temperature_2m_min[0])
-    : temp;
+    : 24;
 
-  const now = liveWeatherState.lastFetchTime || new Date();
-  const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-  // Update DOM elements
   const elTemp = $('weatherTemp');
   const elCond = $('weatherCondition');
-  const elGraphic = $('weatherGraphic');
+  const elRainProb = $('weatherRainProb');
   const elMax = $('weatherTempMax');
   const elMin = $('weatherTempMin');
-  const elRainProb = $('weatherRainProb');
-  const elRainStrip = $('weatherRainStrip');
-  const elHumidity = $('weatherHumidity');
-  const elWind = $('weatherWind');
-  const elUpdated = $('weatherLastUpdated');
-  const staleBadge = $('weatherStaleBadge');
+  const elGraphic = $('weatherGraphic');
 
   if (elTemp) elTemp.textContent = temp;
-  if (elCond) elCond.textContent = wInfo.label;
-  if (elGraphic) elGraphic.textContent = wInfo.icon;
-  if (elMax) elMax.textContent = `${maxTemp}°C`;
-  if (elMin) elMin.textContent = `${minTemp}°C`;
+  if (elCond) elCond.textContent = conditionName;
   if (elRainProb) elRainProb.textContent = `${rainProb}%`;
-  if (elRainStrip) elRainStrip.textContent = `${rainProb}%`;
-  if (elHumidity) elHumidity.textContent = `${humidity}%`;
-  if (elWind) elWind.textContent = `${windSpeed} km/h`;
-  if (elUpdated) elUpdated.textContent = timeStr;
-  if (staleBadge) staleBadge.style.display = liveWeatherState.isStale ? 'inline-block' : 'none';
-
-  // Toggle Visibility
-  const loadingEl = $('weatherLoading');
-  const mainGrid = $('weatherMainGrid');
-  const stripEl = $('weatherMetricsStrip');
-  const noticeEl = $('weatherNotice');
-
-  if (loadingEl) loadingEl.style.display = 'none';
-  if (noticeEl) noticeEl.style.display = 'none';
-  if (mainGrid) mainGrid.style.display = 'grid';
-  if (stripEl) stripEl.style.display = 'grid';
-}
-
-function showWeatherNotice(title, text, showActions = false) {
-  const loadingEl = $('weatherLoading');
-  const mainGrid = $('weatherMainGrid');
-  const stripEl = $('weatherMetricsStrip');
-  const noticeEl = $('weatherNotice');
-  const titleEl = $('weatherNoticeTitle');
-  const textEl = $('weatherNoticeText');
-
-  if (loadingEl) loadingEl.style.display = 'none';
-  if (titleEl) titleEl.textContent = title;
-  if (textEl) textEl.textContent = text;
-
-  if (noticeEl) noticeEl.style.display = 'flex';
-  if (mainGrid && !liveWeatherState.data) mainGrid.style.display = 'none';
-  if (stripEl && !liveWeatherState.data) stripEl.style.display = 'none';
+  if (elMax) elMax.textContent = `${maxTemp}°`;
+  if (elMin) elMin.textContent = `${minTemp}°`;
+  if (elGraphic) elGraphic.innerHTML = getSvgWeatherIcon(wCode);
 }
 
 
