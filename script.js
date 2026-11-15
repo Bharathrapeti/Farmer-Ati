@@ -1114,21 +1114,42 @@ function updatePondTelemetryUI(data) {
   if (data.se) pondTelemetry.season = data.se;
   if (Array.isArray(data.rc)) pondTelemetry.recCrops = data.rc;
   if (data.cc) pondTelemetry.currentCrop = data.cc;
+  if (data.ss !== undefined) pondTelemetry.sensorStatus = data.ss;
+
+  const nowTime = new Date().toLocaleTimeString();
 
   // Overview Tab UI
   const depthEl = $('pondDepth');
   if (depthEl) {
-    depthEl.textContent = pondTelemetry.waterDepth > 0
-      ? pondTelemetry.waterDepth.toFixed(2) + ' m'
-      : (pondTelemetry.mode === 'pond' ? '0.00 m' : 'Seasonal Est.');
+    if (pondTelemetry.mode === 'pond') {
+      const status = pondTelemetry.sensorStatus || 'OK';
+      if ((status === 'TIMEOUT' || status === 'NO_ECHO') && pondTelemetry.waterDepth === 0) {
+        depthEl.textContent = 'Sensor Timeout';
+      } else {
+        depthEl.textContent = pondTelemetry.waterDepth > 0
+          ? pondTelemetry.waterDepth.toFixed(2) + ' m'
+          : '0.00 m';
+      }
+    } else {
+      depthEl.textContent = 'Seasonal Est.';
+    }
   }
 
   const sensorEl = $('pondSensorDist');
   if (sensorEl) {
     if (pondTelemetry.mode === 'pond') {
-      sensorEl.textContent = pondTelemetry.sensorDist !== null
-        ? `HC-SR04 Echo: ${pondTelemetry.sensorDist.toFixed(2)} m · Ref: 5.0m`
-        : 'HC-SR04 > 4.0m / Low Water';
+      const status = pondTelemetry.sensorStatus || 'OK';
+      if (status === 'OK' && pondTelemetry.sensorDist !== null) {
+        sensorEl.innerHTML = `<span style="color:#10b981;font-weight:700">● LIVE</span> Echo: <strong>${pondTelemetry.sensorDist.toFixed(2)} m</strong> · Ref: 5.0m · <span style="opacity:0.85">${nowTime}</span>`;
+      } else if (status === 'TIMEOUT' || status === 'NO_ECHO') {
+        sensorEl.innerHTML = `<span style="color:#ef4444;font-weight:700">⚠️ SENSOR TIMEOUT</span> · No Echo Detected · Ref: 5.0m · <span style="opacity:0.85">${nowTime}</span>`;
+      } else if (status === 'OUT_OF_RANGE') {
+        sensorEl.innerHTML = `<span style="color:#f59e0b;font-weight:700">⚠️ LOW WATER LEVEL</span> · Range &gt; 4.0m · Ref: 5.0m · <span style="opacity:0.85">${nowTime}</span>`;
+      } else {
+        sensorEl.textContent = pondTelemetry.sensorDist !== null
+          ? `HC-SR04 Echo: ${pondTelemetry.sensorDist.toFixed(2)} m · Ref: 5.0m`
+          : 'HC-SR04 > 4.0m / Low Water';
+      }
     } else {
       sensorEl.textContent = 'Mode: Default Seasonal (No Sensor)';
     }
