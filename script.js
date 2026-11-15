@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 // FARMER ATI – Intelligent Pond-Water & Seasonal Dashboard
 // Full Synchronization with ESP32 OLED Hardware
 // ============================================================
@@ -2020,325 +2020,198 @@ const NUTRIENT_DATA = [
     name: 'Nitrogen',
     chem: 'N',
     chemClass: 'chem-n',
-    category: 'primary',
-    categoryLabel: 'Primary Macronutrient',
     image: 'assets/nutrients/nitrogen.jpg',
-    role: 'Leaf & Vegetative Plant Growth • Chlorophyll & Protein Synthesis',
+    subtitle: 'Leaf and plant growth',
     whatHappens: [
-      'Leaves turn light green to pale yellow starting from the tips of older lower leaves (chlorosis).',
-      'Severe stunting of vegetative height and reduced biomass accumulation.',
-      'Marked reduction in tillering in paddy and reduced branching in vegetable crops.',
-      'Premature leaf fall, reduced canopy area, and low grain/fruit protein content.'
+      'Leaves turn light green to yellow.',
+      'Stunted plant growth.',
+      'Less tillering / branching.',
+      'Early leaf fall.'
     ],
-    whereShows: 'Older leaves first (highly mobile in plant tissue)',
-    vulnerableCrops: 'Paddy, Maize, Cotton, Tomato, Sugarcane, Chilli, Onion',
-    solution: 'Soil: 25–40 kg/acre Neem-coated Urea in split doses or well-rotted FYM/compost. Foliar: 1.0%–2.0% Urea spray (10–20g per litre) for rapid green recovery.'
+    whereShows: 'Older leaves first'
   },
   {
     name: 'Phosphorus',
     chem: 'P',
     chemClass: 'chem-p',
-    category: 'primary',
-    categoryLabel: 'Primary Macronutrient',
     image: 'assets/nutrients/phosphorus.jpg',
-    role: 'Root System Development • ATP Energy Transfer • Flowering & Early Maturity',
+    subtitle: 'Root development',
     whatHappens: [
-      'Stunted plant growth with thin, erect spindly stems and reduced root branching.',
-      'Leaves turn abnormally dark green, then develop distinct purple or bronze-red pigmentation along the veins.',
-      'Poor root development reducing drought tolerance and poor legume nodulation.',
-      'Late flowering, delayed seed and grain maturity, and poor seed set.'
+      'Stunted growth.',
+      'Leaves turn dark green, then purple.',
+      'Poor root development.',
+      'Late maturity.'
     ],
-    whereShows: 'Older leaves first (mobile in plant tissue)',
-    vulnerableCrops: 'Groundnut, Black Gram, Green Gram, Paddy, Tomato, Maize',
-    solution: 'Soil: Single Super Phosphate (SSP) @ 50–100 kg/acre or DAP at basal sowing. Foliar: 0.5%–1.0% water-soluble MAP (12:61:00) @ 5–10g/L.'
+    whereShows: 'Older leaves'
   },
   {
     name: 'Potassium',
     chem: 'K',
     chemClass: 'chem-k',
-    category: 'primary',
-    categoryLabel: 'Primary Macronutrient',
     image: 'assets/nutrients/potassium.jpg',
-    role: 'Fruit Quality • Disease Resistance • Stomatal Water Regulation • Sugar Transport',
+    subtitle: 'Fruit quality and disease resistance',
     whatHappens: [
-      'Yellowing followed by scorching and burning of leaf edges (marginal necrosis).',
-      'Poor fruit size, uneven ripening, lack of sweetness, and reduced storage quality.',
-      'Weak stems prone to lodging (falling over in wind) and soft cell structure.',
-      'High susceptibility to fungal leaf spots, blights, and sucking pest attacks.'
+      'Yellowing on leaf edges (scorching).',
+      'Poor fruit size and quality.',
+      'Weak stems, lodging.',
+      'More disease and pest attack.'
     ],
-    whereShows: 'Older leaves (edges and margins)',
-    vulnerableCrops: 'Tomato, Coconut, Mango, Paddy, Sugarcane, Onion, Groundnut',
-    solution: 'Soil: Muriate of Potash (MOP) @ 25–40 kg/acre. Foliar: 1.0% Potassium Nitrate (13:0:45) or Sulphate of Potash (0:0:50) @ 5–10g/L.'
+    whereShows: 'Older leaves (edges)'
   },
   {
     name: 'Calcium',
     chem: 'Ca',
     chemClass: 'chem-ca',
-    category: 'secondary',
-    categoryLabel: 'Secondary Macronutrient',
     image: 'assets/nutrients/calcium.jpg',
-    role: 'Root & Cell Wall Structure • Cell Division • Fruit Membrane Integrity',
+    subtitle: 'Root and cell development',
     whatHappens: [
-      'Blossom End Rot (black sunken leathery spot at the bottom of tomatoes, chillies, and melons).',
-      'Young emerging leaves deformed, hooked at tips, or cupped downward.',
-      'Poor root elongation with stubby, gelatinous root tips.',
-      'Weak cell walls leading to cracking and rapid softening of ripe fruits.'
+      'Poor root growth.',
+      'Young leaves deformed.',
+      'Blossom end rot in fruits.',
+      'Weak cell walls.'
     ],
-    whereShows: 'New leaves & growing points (immobile in plant)',
-    vulnerableCrops: 'Tomato, Chilli, Brinjal, Groundnut (empty pods/pops), Bhendi',
-    solution: 'Soil: Apply Agricultural Gypsum @ 100–200 kg/acre (essential at pegging for groundnut). Foliar: 0.2%–0.5% Calcium Nitrate @ 2–3g/L during fruit set.'
+    whereShows: 'New leaves, growing points'
   },
   {
     name: 'Magnesium',
     chem: 'Mg',
     chemClass: 'chem-mg',
-    category: 'secondary',
-    categoryLabel: 'Secondary Macronutrient',
     image: 'assets/nutrients/magnesium.jpg',
-    role: 'Central Atom of Chlorophyll • Carbohydrate Transport & Photosynthesis',
+    subtitle: 'Chlorophyll formation',
     whatHappens: [
-      'Yellowing between leaf veins (interveinal chlorosis) while veins stay dark green (herringbone pattern).',
-      'Older lower leaves severely affected; leaf margins may cup upward and develop reddish-purple tints.',
-      'Reduced photosynthesis leading to poor grain filling and early crop decline.'
+      'Yellowing between veins (veins remain green).',
+      'Older leaves affected.',
+      'Poor photosynthesis.'
     ],
-    whereShows: 'Older leaves (between veins)',
-    vulnerableCrops: 'Cotton, Maize, Coconut, Tomato, Sugarcane, Groundnut',
-    solution: 'Soil: Dolomite lime @ 50 kg/acre or Magnesium Sulphate @ 10–15 kg/acre. Foliar spray: 1.0% Magnesium Sulphate (Epsom salt @ 10g/L).'
+    whereShows: 'Older leaves (between veins)'
   },
   {
     name: 'Sulphur',
     chem: 'S',
     chemClass: 'chem-s',
-    category: 'secondary',
-    categoryLabel: 'Secondary Macronutrient',
     image: 'assets/nutrients/sulphur.jpg',
-    role: 'Protein Synthesis • Oil Formation in Seeds • Pungent Volatile Oils (Onion/Garlic)',
+    subtitle: 'Protein formation',
     whatHappens: [
-      'Uniform pale yellowing across the entire blade of young upper leaves.',
-      'Stunted plant growth with thin, rigid, woody stems and reduced leaf area.',
-      'Drastic reduction in oil content in groundnut/sesame and low seed protein.',
-      'Delayed flowering and late pod maturity.'
+      'Uniform yellowing of young leaves.',
+      'Stunted growth.',
+      'Weak stems.',
+      'Poor protein content.'
     ],
-    whereShows: 'Young leaves first (unlike Nitrogen which starts on older leaves)',
-    vulnerableCrops: 'Groundnut, Sesame, Onion, Garlic, Black Gram, Cotton',
-    solution: 'Soil: Agricultural Gypsum @ 50–100 kg/acre or Sulphur 90% bentonite @ 3–5 kg/acre. Foliar: 0.2% Micronized Wettable Sulphur.'
+    whereShows: 'Young leaves'
   },
   {
     name: 'Iron',
     chem: 'Fe',
     chemClass: 'chem-fe',
-    category: 'micronutrient',
-    categoryLabel: 'Essential Micronutrient',
     image: 'assets/nutrients/iron.jpg',
-    role: 'Chlorophyll Synthesis Catalyst • Electron Transport in Respiration',
+    subtitle: 'Chlorophyll production',
     whatHappens: [
-      'Intense interveinal chlorosis on youngest leaves; veins stand out as a fine green network.',
-      'In severe deficiency, leaves turn ivory-white or bleached yellow with scorched tips.',
-      'Stunted vegetative growth and terminal twig dieback in perennial orchard trees.'
+      'Yellowing between veins (especially in young leaves).',
+      'Leaves turn almost white.'
     ],
-    whereShows: 'Youngest emerging leaves (immobile in plant)',
-    vulnerableCrops: 'Paddy (nursery/calcareous soils), Groundnut, Sugarcane, Mango, Tomato',
-    solution: 'Soil: Ferrous Sulphate (FeSO₄) @ 10–15 kg/acre mixed with FYM. Foliar spray: 0.5%–1.0% Ferrous Sulphate + 0.1% Citric Acid @ 5g/L for rapid greening.'
+    whereShows: 'Young leaves'
   },
   {
     name: 'Zinc',
     chem: 'Zn',
     chemClass: 'chem-zn',
-    category: 'micronutrient',
-    categoryLabel: 'Essential Micronutrient',
     image: 'assets/nutrients/zinc.jpg',
-    role: 'Auxin (Growth Hormone) Synthesis • Internode Elongation • Enzyme Activation',
+    subtitle: 'Growth and enzyme activity',
     whatHappens: [
-      'Small, narrow leaves ("little leaf" condition) clustered tightly in rosettes.',
-      'Severely shortened internodes causing stunted, compact, bunchy plant growth.',
-      'Leaves develop pale yellow mottling; Khaira disease in paddy (rusty bronze blotches).',
-      'White bud / bleached bands along the midrib in maize seedlings.'
+      'Small narrow leaves.',
+      'Leaves become pale.',
+      'Short internodes (little leaf spacing).',
+      'Poor growth.'
     ],
-    whereShows: 'Young and middle leaves',
-    vulnerableCrops: 'Paddy (Khaira disease), Maize, Cotton, Tomato, Citrus',
-    solution: 'Soil: Zinc Sulphate heptahydrate (21%) @ 10 kg/acre at field prep. Foliar spray: 0.5% Zinc Sulphate + 0.25% Lime @ 5g/L.'
+    whereShows: 'Young leaves'
   },
   {
     name: 'Boron',
     chem: 'B',
     chemClass: 'chem-b',
-    category: 'micronutrient',
-    categoryLabel: 'Essential Micronutrient',
     image: 'assets/nutrients/boron.jpg',
-    role: 'Flowering & Pollen Germination • Fruit Set • Sugar Transport • Cell Wall Cross-linking',
+    subtitle: 'Flowering and fruit development',
     whatHappens: [
-      'Poor flowering, heavy flower and young fruit drop, and failure of pollen tube growth.',
-      'Cracked, deformed, bumpy fruits with internal brown corky tissue and bitter taste.',
-      'Hollow stems in cabbage/cauliflower and hollow heart in groundnut kernels.',
-      'Death of terminal growing points (apical bud necrosis) leading to bushy lateral shoots.'
+      'Poor flowering.',
+      'Flower drop.',
+      'Cracked / deformed fruits.',
+      'Hollow stems.'
     ],
-    whereShows: 'Growing points, flowers, flower buds & developing fruits',
-    vulnerableCrops: 'Tomato, Groundnut, Coconut (barren/cracked nuts), Mango, Bhendi',
-    solution: 'Soil: Borax @ 4–5 kg/acre. Foliar spray: 0.1%–0.15% Solubor / Borax (1–1.5g per litre) during pre-flowering and fruit set.'
+    whereShows: 'Growing points, flowers, fruits'
   },
   {
     name: 'Manganese',
     chem: 'Mn',
     chemClass: 'chem-mn',
-    category: 'micronutrient',
-    categoryLabel: 'Essential Micronutrient',
     image: 'assets/nutrients/manganese.jpg',
-    role: 'Photosynthetic Water Splitting (Hill Reaction) • Nitrogen Metabolism Catalyst',
+    subtitle: 'Photosynthesis',
     whatHappens: [
-      'Yellowing between veins accompanied by characteristic small brown necrotic spots/specks.',
-      'Grey specks on leaf blades in severe cases (grey speck of oats, marsh spot of peas).',
-      'Drastically reduced photosynthetic output and fragile, weak seedlings.'
+      'Yellowing between veins with small brown spots.',
+      'Grey specks in severe cases.',
+      'Reduced photosynthesis.'
     ],
-    whereShows: 'Young to middle leaves',
-    vulnerableCrops: 'Paddy, Sugarcane, Maize, Pulses (Black Gram/Green Gram), Tomato',
-    solution: 'Soil: Manganese Sulphate @ 5–10 kg/acre. Foliar spray: 0.2%–0.5% Manganese Sulphate (2–5g/L of water).'
+    whereShows: 'Young to middle leaves'
   },
   {
     name: 'Copper',
     chem: 'Cu',
     chemClass: 'chem-cu',
-    category: 'micronutrient',
-    categoryLabel: 'Essential Micronutrient',
     image: 'assets/nutrients/copper.jpg',
-    role: 'Enzyme Activity • Lignin Formation (Stem Strength) • Seed & Grain Filling',
+    subtitle: 'Enzyme activity',
     whatHappens: [
-      'Leaves wilt, twist spirally, and curl inward with bleached tips ("white tip" condition).',
-      'Die-back of terminal twigs and shoots in fruit trees and perennial vines.',
-      'Poor flower and seed formation, empty grain heads, and chaffy grains in cereals.'
+      'Leaves wilt and curl.',
+      'Die-back of shoots.',
+      'Poor flower and seed formation.'
     ],
-    whereShows: 'Youngest leaves & growing shoot tips',
-    vulnerableCrops: 'Paddy, Wheat, Citrus, Mango, Tomato',
-    solution: 'Soil: Copper Sulphate @ 2–4 kg/acre. Foliar: 0.1% Copper Sulphate + lime or Copper Oxychloride spray (Bordeaux mixture).'
-  },
-  {
-    name: 'Molybdenum',
-    chem: 'Mo',
-    chemClass: 'chem-mo',
-    category: 'micronutrient',
-    categoryLabel: 'Essential Trace Micronutrient',
-    image: 'assets/nutrients/molybdenum.jpg',
-    role: 'Nitrate Reductase Enzyme • Symbiotic Nitrogen Fixation in Legume Nodules',
-    whatHappens: [
-      '"Whiptail" syndrome: leaf blade fails to develop properly, leaving narrow strap-like midribs.',
-      'Marginal chlorosis, scorching, and upward cupping of middle and older leaves.',
-      'Poor root nodule development in legumes leading to nitrogen starvation symptoms.'
-    ],
-    whereShows: 'Middle to older leaves',
-    vulnerableCrops: 'Cauliflower, Cabbage, Black Gram, Green Gram, Groundnut',
-    solution: 'Seed treatment: 2g Sodium Molybdate per kg seed. Soil: 500g–1 kg/acre. Foliar: 0.05% Sodium Molybdate (0.5g/L).'
+    whereShows: 'Young leaves, shoot tips'
   }
 ];
-
-let nutrientFilterMode = 'all';
-let nutrientSearchQuery = '';
 
 function buildNutrientCare() {
   const feed = $('nutrientFeed');
   if (!feed) return;
   feed.innerHTML = '';
 
-  let filtered = NUTRIENT_DATA;
-
-  // Filter mode
-  if (nutrientFilterMode !== 'all') {
-    filtered = filtered.filter(item => item.category === nutrientFilterMode);
-  }
-
-  // Search filter
-  if (nutrientSearchQuery.trim()) {
-    const q = nutrientSearchQuery.toLowerCase();
-    filtered = filtered.filter(item => {
-      return item.name.toLowerCase().includes(q) ||
-        item.chem.toLowerCase().includes(q) ||
-        item.role.toLowerCase().includes(q) ||
-        item.whereShows.toLowerCase().includes(q) ||
-        item.vulnerableCrops.toLowerCase().includes(q) ||
-        item.solution.toLowerCase().includes(q) ||
-        item.whatHappens.some(sym => sym.toLowerCase().includes(q));
-    });
-  }
-
-  const countEl = $('countAllNutrients');
-  if (countEl) countEl.textContent = NUTRIENT_DATA.length;
-
-  if (filtered.length === 0) {
-    feed.innerHTML = '<div class="muted" style="padding:30px; text-align:center; font-size:15px;">No nutrients match your search. Try "yellowing", "purple", "root", or "tomato".</div>';
-    return;
-  }
-
-  filtered.forEach(item => {
-    const card = document.createElement('div');
-    card.className = 'nutrient-card';
+  NUTRIENT_DATA.forEach(item => {
+    const article = document.createElement('article');
+    article.className = 'nutrient-card';
 
     const bullets = item.whatHappens.map(b => `<li>${esc(b)}</li>`).join('');
 
-    card.innerHTML = `
-      <!-- Left Column: Deficiency Photo & Badges -->
+    article.innerHTML = `
       <div class="nutrient-media">
         <div class="nutrient-image-frame">
-          <img src="${esc(item.image)}" alt="${esc(item.name)} deficiency symptoms" class="nutrient-img" loading="lazy">
-        </div>
-        <div class="nutrient-badge-group">
-          <span class="nutrient-chem-badge ${item.chemClass}">${esc(item.chem)}</span>
-          <span class="nutrient-type-badge">${esc(item.categoryLabel)}</span>
-        </div>
-        <div class="nutrient-zone-tag">
-          <span>📍 Shows on: <strong>${esc(item.whereShows)}</strong></span>
+          <img src="${esc(item.image)}"
+               alt="${esc(item.name)} deficiency symptoms"
+               class="nutrient-img"
+               loading="lazy">
         </div>
       </div>
 
-      <!-- Right Column: Agronomic Details & Remedies -->
       <div class="nutrient-details">
-        <div class="nutrient-header">
-          <h3 class="nutrient-title">
-            <span>${esc(item.name)} (${esc(item.chem)})</span>
-          </h3>
-          <div class="nutrient-role">${esc(item.role)}</div>
+        <div class="nutrient-identity">
+          <span class="nutrient-symbol ${item.chemClass}">${esc(item.chem)}</span>
+          <div class="nutrient-name-block">
+            <h3 class="nutrient-name">${esc(item.name)} <span class="chem-paren">(${esc(item.chem)})</span></h3>
+            <div class="nutrient-function">${esc(item.subtitle)}</div>
+          </div>
         </div>
 
-        <div class="nutrient-section">
-          <div class="nutrient-section-title">
-            <span>⚠️ What Happens (Symptoms &amp; Crop Effects)</span>
-          </div>
-          <ul class="nutrient-list">${bullets}</ul>
+        <div class="nutrient-info-block">
+          <div class="info-heading">What Happens</div>
+          <ul class="symptoms-list">${bullets}</ul>
         </div>
 
-        <div class="nutrient-meta-grid">
-          <div class="nutrient-meta-box">
-            <div class="meta-box-label">🎯 Vulnerable Crops</div>
-            <div class="meta-box-text">${esc(item.vulnerableCrops)}</div>
-          </div>
-          <div class="nutrient-meta-box highlight-remedy">
-            <div class="meta-box-label">🧪 Field Solution &amp; Fertilizer Remedy</div>
-            <div class="meta-box-text">${esc(item.solution)}</div>
-          </div>
+        <div class="nutrient-where-block">
+          <div class="info-heading">Where It Shows</div>
+          <div class="where-highlight">${esc(item.whereShows)}</div>
         </div>
       </div>
     `;
-    feed.appendChild(card);
+    feed.appendChild(article);
   });
 }
 
-const nutrientFilterBtns = $$('#nutrientFilterGroup .filter-btn');
-const nutrientSearchInput = $('nutrientSearchInput');
-
-if (nutrientFilterBtns.length > 0) {
-  nutrientFilterBtns.forEach(btn => {
-    btn.addEventListener('click', () => {
-      nutrientFilterBtns.forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      nutrientFilterMode = btn.dataset.nutrientFilter;
-      buildNutrientCare();
-    });
-  });
-}
-
-if (nutrientSearchInput) {
-  nutrientSearchInput.addEventListener('input', (e) => {
-    nutrientSearchQuery = e.target.value;
-    buildNutrientCare();
-  });
-}
 
 // ============================================================
 // BUTTON WIRING

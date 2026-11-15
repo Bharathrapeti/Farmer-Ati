@@ -1,4 +1,4 @@
-/* ============================================================
+﻿/* ============================================================
    FARMER ATI — Modern AgroTech Glassmorphism Interface
    Lush Scenic Greenery Landscape & Translucent Frosted Glass
    ============================================================ */
@@ -1240,285 +1240,262 @@ a {
 /* ══════════════════════════════════════════════
    TAB 6: NUTRIENT CARE & DEFICIENCY GUIDE
 ═══════════════════════════════════════════════ */
+
 .nutrient-page-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
   flex-wrap: wrap;
-  margin-bottom: 8px;
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
 }
 
 .golden-rule-pill {
-  background: rgba(234, 179, 8, 0.18);
-  border: 1px solid rgba(234, 179, 8, 0.45);
+  background: rgba(234, 179, 8, 0.14);
+  border: 1px solid rgba(234, 179, 8, 0.38);
   border-radius: var(--radius-pill);
-  padding: 8px 18px;
+  padding: 7px 16px;
   font-size: 12.5px;
   font-weight: 700;
   color: #fef08a;
-  backdrop-filter: blur(10px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
 }
 
+/* ── Vertical feed of nutrient sections ── */
 .nutrient-feed {
   display: flex;
   flex-direction: column;
-  gap: 24px;
-  margin: 22px 0 30px;
+  gap: 0;
+  margin-bottom: 8px;
 }
 
+/* ── Individual nutrient section card ── */
 .nutrient-card {
   display: grid;
-  grid-template-columns: 260px 1fr;
-  gap: 26px;
-  background: var(--glass-card);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border: 1px solid var(--glass-card-border);
-  border-radius: var(--radius-lg);
-  padding: 24px 26px;
-  box-shadow: var(--glass-card-shadow);
-  transition: all 0.25s ease;
-  position: relative;
-  overflow: hidden;
+  grid-template-columns: 290px 1fr;
+  gap: 44px;
+  padding: 38px 4px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  align-items: center;
 }
 
-.nutrient-card:hover {
-  transform: translateY(-3px);
-  border-color: rgba(74, 222, 128, 0.45);
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
+.nutrient-card:last-child {
+  border-bottom: none;
+  padding-bottom: 12px;
 }
 
+/* ── Left column ── */
 .nutrient-media {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+  /* intentionally empty — acts as column container */
 }
 
 .nutrient-image-frame {
-  width: 100%;
-  border-radius: var(--radius-md);
+  border-radius: 14px;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  background: rgba(0, 0, 0, 0.40);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
-  position: relative;
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  box-shadow: 0 10px 36px rgba(0, 0, 0, 0.38);
+  background: rgba(0, 0, 0, 0.30);
 }
 
 .nutrient-img {
   width: 100%;
-  height: auto;
+  height: 230px;
   display: block;
   object-fit: cover;
-  transition: transform 0.35s ease;
+  transition: transform 0.45s ease;
 }
 
 .nutrient-card:hover .nutrient-img {
-  transform: scale(1.03);
+  transform: scale(1.04);
 }
 
-.nutrient-badge-group {
+/* ── Right column ── */
+.nutrient-details {
   display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 22px;
 }
 
-.nutrient-chem-badge {
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
+/* Identity: coloured symbol + name + function subtitle */
+.nutrient-identity {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.nutrient-symbol {
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
   display: grid;
   place-items: center;
   font-family: var(--font-display);
   font-weight: 800;
-  font-size: 16px;
-  color: #ffffff;
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
-  border: 1.5px solid rgba(255, 255, 255, 0.35);
+  font-size: 19px;
+  color: #fff;
   flex-shrink: 0;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.32);
+  letter-spacing: -0.02em;
 }
 
-.chem-n  { background: #15803d; }
-.chem-p  { background: #7e22ce; }
-.chem-k  { background: #b91c1c; }
-.chem-ca { background: #0284c7; }
-.chem-mg { background: #16a34a; }
-.chem-s  { background: #d97706; }
-.chem-fe { background: #059669; }
-.chem-zn { background: #2563eb; }
-.chem-b  { background: #ea580c; }
-.chem-mn { background: #475569; }
-.chem-cu { background: #0d9488; }
-.chem-mo { background: #6366f1; }
+.nutrient-name-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 2px;
+}
 
-.nutrient-type-badge {
-  background: rgba(255, 255, 255, 0.10);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: var(--radius-pill);
-  padding: 4px 14px;
-  font-size: 11px;
+.nutrient-name {
+  font-family: var(--font-display);
+  font-size: 23px;
+  font-weight: 800;
+  color: #ffffff;
+  margin: 0;
+  line-height: 1.1;
+}
+
+.chem-paren {
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 0.88em;
+  margin-left: 4px;
+}
+
+.nutrient-function {
+  font-size: 12.5px;
   font-weight: 700;
   color: var(--emerald-mint);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.065em;
+  opacity: 0.9;
 }
 
-.nutrient-zone-tag {
-  background: rgba(0, 0, 0, 0.30);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: var(--radius-sm);
-  padding: 8px 12px;
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.88);
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.nutrient-zone-tag strong {
-  color: #ffffff;
-}
-
-.nutrient-details {
+/* What Happens block */
+.nutrient-info-block {
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  gap: 14px;
-}
-
-.nutrient-title {
-  font-family: var(--font-display);
-  font-size: 22px;
-  font-weight: 800;
-  color: #ffffff;
-  margin: 0;
-  display: flex;
-  align-items: center;
   gap: 10px;
 }
 
-.nutrient-role {
-  font-size: 13.5px;
-  color: var(--emerald-mint);
-  font-weight: 600;
-  margin-top: 3px;
-}
-
-.nutrient-section-title {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: #fbbf24;
-  margin-bottom: 8px;
-}
-
-.nutrient-list {
-  margin: 0;
-  padding-left: 20px;
-  font-size: 13.5px;
-  line-height: 1.7;
-  color: rgba(255, 255, 255, 0.92);
-}
-
-.nutrient-list li {
-  margin-bottom: 4px;
-}
-
-.nutrient-meta-grid {
-  display: grid;
-  grid-template-columns: 1fr 1.25fr;
-  gap: 14px;
-  margin-top: 4px;
-}
-
-.nutrient-meta-box {
-  background: var(--glass-inner);
-  border: 1px solid var(--glass-inner-border);
-  border-radius: var(--radius-sm);
-  padding: 12px 16px;
-}
-
-.nutrient-meta-box.highlight-remedy {
-  background: linear-gradient(145deg, rgba(34, 197, 94, 0.22) 0%, rgba(16, 85, 46, 0.35) 100%);
-  border-color: rgba(74, 222, 128, 0.55);
-}
-
-.meta-box-label {
+.info-heading {
   font-size: 11px;
   font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--emerald-mint);
-  margin-bottom: 4px;
+  letter-spacing: 0.09em;
+  color: rgba(255, 255, 255, 0.45);
 }
 
-.meta-box-text {
-  font-size: 13px;
-  line-height: 1.55;
+.symptoms-list {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.symptoms-list li {
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+/* Where It Shows block */
+.nutrient-where-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.where-highlight {
+  display: inline-flex;
+  align-items: center;
+  padding: 9px 16px;
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9px;
+  font-size: 14px;
+  font-weight: 600;
   color: #ffffff;
+  align-self: flex-start;
 }
 
-/* Golden Rules Callout Box */
+/* Chemical symbol background gradients by element */
+.chem-n  { background: linear-gradient(135deg, #15803d 0%, #22c55e 100%); }
+.chem-p  { background: linear-gradient(135deg, #6d28d9 0%, #a855f7 100%); }
+.chem-k  { background: linear-gradient(135deg, #b91c1c 0%, #ef4444 100%); }
+.chem-ca { background: linear-gradient(135deg, #0369a1 0%, #38bdf8 100%); }
+.chem-mg { background: linear-gradient(135deg, #0f766e 0%, #2dd4bf 100%); }
+.chem-s  { background: linear-gradient(135deg, #92400e 0%, #f59e0b 100%); }
+.chem-fe { background: linear-gradient(135deg, #064e3b 0%, #10b981 100%); }
+.chem-zn { background: linear-gradient(135deg, #1e40af 0%, #60a5fa 100%); }
+.chem-b  { background: linear-gradient(135deg, #9a3412 0%, #fb923c 100%); }
+.chem-mn { background: linear-gradient(135deg, #374151 0%, #9ca3af 100%); }
+.chem-cu { background: linear-gradient(135deg, #0e7490 0%, #22d3ee 100%); }
+
+/* ── Bottom golden rules card ── */
 .nutrient-rules-card {
-  margin-top: 24px;
-  background: linear-gradient(135deg, rgba(30, 41, 59, 0.6) 0%, rgba(15, 23, 42, 0.8) 100%);
-  border: 1.5px solid rgba(234, 179, 8, 0.4);
-  border-radius: var(--radius-lg);
-  padding: 24px;
+  margin-top: 30px;
+  background: rgba(234, 179, 8, 0.06);
+  border: 1px solid rgba(234, 179, 8, 0.28);
+  border-radius: 16px;
+  padding: 26px 30px;
   display: flex;
   gap: 20px;
   align-items: flex-start;
-  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.35);
 }
 
 .rules-card-icon {
-  font-size: 38px;
-  filter: drop-shadow(0 2px 8px rgba(234, 179, 8, 0.5));
+  font-size: 30px;
   flex-shrink: 0;
+  line-height: 1;
+  margin-top: 2px;
 }
 
 .rules-card-content h3 {
   margin: 0 0 10px;
   font-family: var(--font-display);
-  font-size: 18px;
+  font-size: 16.5px;
   font-weight: 800;
   color: #fef08a;
 }
 
 .rules-list {
   margin: 0;
-  padding-left: 20px;
+  padding-left: 18px;
   font-size: 13.5px;
-  line-height: 1.85;
-  color: rgba(255, 255, 255, 0.9);
+  line-height: 1.8;
+  color: rgba(255, 255, 255, 0.82);
 }
 
-.rules-list li {
-  margin-bottom: 6px;
-}
+.rules-list li { margin-bottom: 4px; }
+.rules-list strong { color: #ffffff; }
 
-.rules-list strong {
-  color: #ffffff;
-}
-
+/* ── Responsive ── */
 @media (max-width: 860px) {
   .nutrient-card {
     grid-template-columns: 1fr;
+    gap: 22px;
+    padding: 30px 0;
   }
-  .nutrient-meta-grid {
-    grid-template-columns: 1fr;
+  .nutrient-img {
+    height: 210px;
+  }
+  .where-highlight {
+    align-self: stretch;
   }
   .nutrient-rules-card {
     flex-direction: column;
-    gap: 12px;
+    gap: 10px;
   }
 }
 
+@media (max-width: 480px) {
+  .nutrient-name { font-size: 20px; }
+  .nutrient-symbol { width: 44px; height: 44px; font-size: 16px; border-radius: 10px; }
+  .nutrient-card { gap: 18px; padding: 24px 0; }
+  .symptoms-list li { font-size: 13.5px; }
+}
 /* ══════════════════════════════════════════════
    SITE FOOTER
 ═══════════════════════════════════════════════ */
