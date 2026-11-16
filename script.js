@@ -2854,6 +2854,25 @@ async function connectBLE() {
   }
 }
 
+function resetLiveScreenToWaiting() {
+  const container = $('liveLines');
+  if (container) {
+    container.innerHTML = `
+      <div class="live-empty">
+        <div class="live-empty-card">
+          <div class="live-empty-icon">📟</div>
+          <div class="live-empty-title">Waiting for ESP32 Screen</div>
+          <div class="live-empty-subtitle">Connect to FARMER ATI via Bluetooth to view live information.</div>
+        </div>
+      </div>
+    `;
+  }
+  const title = $('liveScreenTitle');
+  if (title) title.textContent = 'FARMER ATI';
+  const time = $('liveScreenTime');
+  if (time) time.textContent = '—';
+}
+
 async function disconnectBLE() {
   if (bleCharacteristic) {
     try { await bleCharacteristic.stopNotifications(); } catch (_) {}
@@ -2870,6 +2889,7 @@ async function disconnectBLE() {
   $('connectButton').disabled = false;
   $('connectButton').style.display = 'inline-flex';
   $('disconnectButton').style.display = 'none';
+  resetLiveScreenToWaiting();
 }
 
 function onDisconnected() {
@@ -2879,7 +2899,10 @@ function onDisconnected() {
   $('disconnectButton').style.display = 'none';
 
   setTimeout(async () => {
-    if (!bleDevice) return;
+    if (!bleDevice) {
+      resetLiveScreenToWaiting();
+      return;
+    }
     try {
       setStatus('connecting', 'Auto-reconnecting…');
       bleServer = await bleDevice.gatt.connect();
@@ -2892,6 +2915,7 @@ function onDisconnected() {
       $('disconnectButton').style.display = 'inline-flex';
     } catch (e) {
       setStatus('error', 'Auto-reconnect failed. Please click Connect again.');
+      resetLiveScreenToWaiting();
     }
   }, 2000);
 }
