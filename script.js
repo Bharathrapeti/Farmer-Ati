@@ -3065,8 +3065,9 @@ const NUTRIENT_DATA = [
     image: 'assets/nutrients/iron.jpg',
     subtitle: 'Chlorophyll production',
     whatHappens: [
+      'Leaves turn almost white.',
       'Yellowing between veins (especially in young leaves).',
-      'Leaves turn almost white.'
+      'Stunted growth.'
     ],
     whereShows: 'Young leaves'
   },
