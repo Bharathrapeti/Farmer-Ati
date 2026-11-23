@@ -2536,13 +2536,33 @@ function renderLiveScreen(data) {
     if (!lines.length) {
       container.innerHTML = '<div class="live-empty">Waiting for ESP32 screen update…</div>';
     } else {
-      container.innerHTML = lines.map((text, i) => {
+      const isSplash = lines.length <= 2 && lines.every(l => l.trim().length <= 14 && !l.startsWith('>'));
+      const linesHtml = lines.map((text, i) => {
+        const trimmed = text.trim();
+        // Check for navigation footer line (e.g. "D BACK   * HOME")
+        if (trimmed.includes('BACK') && (trimmed.includes('HOME') || trimmed.includes('*'))) {
+          const parts = trimmed.split(/\s{2,}/);
+          if (parts.length >= 2) {
+            return `<div class="live-line live-footer"><span>${esc(parts[0])}</span><span>${esc(parts.slice(1).join(' '))}</span></div>`;
+          }
+        }
+
         let cls = 'live-line';
-        if (i === 0 && text.length <= 20) cls += ' live-heading';
-        else if (text.startsWith('>')) cls += ' live-selected';
-        else if (text.match(/^[A-Z ]+:$/)) cls += ' live-label';
+        if (isSplash) {
+          cls += ' live-splash';
+        } else if (i === 0 && trimmed.length <= 20) {
+          cls += ' live-heading';
+        } else if (i === 1 && !trimmed.startsWith('>') && !trimmed.match(/^\d/) && trimmed.length <= 22 && trimmed === trimmed.toUpperCase()) {
+          // Subheading (e.g. "POND LEVEL", "CROP LIBRARY")
+          cls += ' live-subheading';
+        } else if (trimmed.startsWith('>')) {
+          cls += ' live-selected';
+        } else if (trimmed.match(/^[A-Z ]+:$/)) {
+          cls += ' live-label';
+        }
         return `<div class="${cls}">${esc(text)}</div>`;
       }).join('');
+      container.innerHTML = `<div class="oled-display-box${isSplash ? ' oled-box-splash' : ''}">${linesHtml}</div>`;
     }
   }
 
@@ -2566,26 +2586,10 @@ function renderLiveScreen(data) {
   // Update Telemetry UI
   updatePondTelemetryUI(data);
 
-  // ════════════════════════════════════════════════════════
-  // AUTOMATIC OLED -> WEBSITE TAB SYNCHRONIZATION
-  // ════════════════════════════════════════════════════════
+  // Keep track of screen name change without navigating away from the current tab
   const sUpper = screen.toUpperCase();
   if (sUpper !== lastScreenName) {
     lastScreenName = sUpper;
-
-    if (sUpper.includes('CROP LIBRARY') || sUpper.includes('SUITABLE')) {
-      switchTab('tab-crops');
-    } else if (sUpper.includes('FARMER PROBLEMS') || sUpper.includes('PROBLEMS')) {
-      switchTab('tab-problems');
-    } else if (sUpper.includes('POND LEVEL')) {
-      switchTab('tab-overview');
-    }
-
-    // If OLED opened a specific crop guide, automatically select it on website
-    if (activeCrop && CROPS[activeCrop]) {
-      switchTab('tab-crops');
-      selectCrop(activeCrop);
-    }
   }
 
   frameCount++;
