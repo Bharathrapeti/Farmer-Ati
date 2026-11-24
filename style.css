@@ -1291,12 +1291,13 @@ a {
 }
 
 .crop-btn {
+  position: relative;
   background: var(--glass-inner);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   border: 1px solid var(--glass-inner-border);
   border-radius: var(--radius-md);
-  padding: 16px 14px;
+  padding: 16px 52px 16px 14px;
   text-align: left;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -1320,7 +1321,9 @@ a {
 }
 
 .crop-name {
-  display: block;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   font-family: var(--font-display);
   font-weight: 800;
   font-size: 15px;
@@ -2793,4 +2796,683 @@ a {
   font-weight: 600;
   margin-top: 3px;
   display: block;
+}
+
+/* ══════════════════════════════════════════════
+   OFFICER APPROVAL SYSTEM & AUTHORIZATION BADGES
+═══════════════════════════════════════════════ */
+
+/* Badge positioned precisely where user circled in photo */
+.crop-approval-badge {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 5;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+}
+
+/* Approved Green Tick Mark Badge (Matching Circled Photo) */
+.crop-approval-badge.approved {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.40), rgba(16, 185, 129, 0.70));
+  border: 2px solid #34d399;
+  color: #ffffff;
+  box-shadow: 0 0 16px rgba(52, 211, 153, 0.7), inset 0 0 8px rgba(255, 255, 255, 0.25);
+}
+
+.crop-approval-badge.approved .badge-check {
+  font-size: 18px;
+  font-weight: 900;
+  line-height: 1;
+  color: #ffffff;
+  text-shadow: 0 0 8px rgba(16, 185, 129, 0.9);
+}
+
+.crop-approval-badge.approved:hover {
+  transform: translateY(-50%) scale(1.16);
+  box-shadow: 0 0 24px rgba(52, 211, 153, 0.95);
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.6), rgba(16, 185, 129, 0.9));
+}
+
+/* Pending Approval Badge */
+.crop-approval-badge.pending {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(245, 158, 11, 0.18);
+  border: 1.5px dashed rgba(245, 158, 11, 0.75);
+  color: #fbbf24;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.crop-approval-badge.pending:hover {
+  transform: translateY(-50%) scale(1.08);
+  background: rgba(245, 158, 11, 0.3);
+  border-color: #f59e0b;
+}
+
+/* Rejected Badge */
+.crop-approval-badge.rejected {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(239, 68, 68, 0.25);
+  border: 1.5px solid #ef4444;
+  color: #fca5a5;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.crop-approval-badge.rejected:hover {
+  transform: translateY(-50%) scale(1.12);
+  background: rgba(239, 68, 68, 0.45);
+  box-shadow: 0 0 16px rgba(239, 68, 68, 0.6);
+}
+
+/* Inline Green Tick Mark beside Crop Name */
+.approved-inline-tick {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  background: rgba(16, 185, 129, 0.28);
+  border: 1px solid #34d399;
+  color: #34d399;
+  font-size: 11px;
+  font-weight: 900;
+  margin-left: 6px;
+  vertical-align: middle;
+  box-shadow: 0 0 8px rgba(52, 211, 153, 0.6);
+}
+
+/* Crop Hint Status Colors */
+.crop-hint.status-approved {
+  color: #34d399;
+  font-weight: 700;
+}
+.crop-hint.status-pending {
+  color: #fbbf24;
+  font-weight: 600;
+}
+.crop-hint.status-rejected {
+  color: #f87171;
+  font-weight: 600;
+}
+
+/* Officer Portal Filter Button */
+.btn-officer-portal {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.25), rgba(5, 150, 105, 0.38)) !important;
+  border-color: rgba(52, 211, 153, 0.55) !important;
+  color: #ffffff !important;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.btn-officer-portal:hover {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.45), rgba(5, 150, 105, 0.65)) !important;
+  box-shadow: 0 0 18px rgba(52, 211, 153, 0.45);
+}
+.officer-badge-count {
+  background: rgba(245, 158, 11, 0.95);
+  color: #1a0f01;
+  font-size: 10px;
+  font-weight: 900;
+  padding: 1px 7px;
+  border-radius: 12px;
+  margin-left: 3px;
+}
+
+/* Overview tab chip tick */
+.crop-chip .chip-tick {
+  color: #34d399;
+  font-weight: 900;
+  margin-left: 4px;
+  text-shadow: 0 0 6px rgba(52, 211, 153, 0.8);
+}
+.crop-chip .chip-pending {
+  color: #fbbf24;
+  font-size: 11px;
+  margin-left: 3px;
+}
+.crop-chip.chip-approved {
+  border-color: rgba(52, 211, 153, 0.6);
+  background: rgba(16, 185, 129, 0.25);
+}
+
+/* Crop Detail Authorization Banner */
+.crop-auth-banner {
+  padding: 16px 18px;
+  border-radius: var(--radius-md);
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  transition: all 0.2s ease;
+}
+.crop-auth-banner.approved {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.18), rgba(5, 150, 105, 0.28));
+  border: 1.5px solid rgba(52, 211, 153, 0.5);
+  box-shadow: 0 4px 20px rgba(16, 185, 129, 0.15);
+}
+.crop-auth-banner.pending {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.12), rgba(217, 119, 6, 0.2));
+  border: 1.5px dashed rgba(245, 158, 11, 0.55);
+}
+.crop-auth-banner.rejected {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(185, 28, 28, 0.25));
+  border: 1.5px solid rgba(239, 68, 68, 0.5);
+}
+
+.auth-banner-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.auth-seal {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 900;
+  flex-shrink: 0;
+}
+.crop-auth-banner.approved .auth-seal {
+  background: #10b981;
+  color: #ffffff;
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.7);
+}
+.crop-auth-banner.pending .auth-seal {
+  background: #f59e0b;
+  color: #1a0f01;
+}
+.crop-auth-banner.rejected .auth-seal {
+  background: #ef4444;
+  color: #ffffff;
+}
+
+.auth-title {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 14.5px;
+  color: #ffffff;
+}
+.auth-sub {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.75);
+  margin-top: 2px;
+}
+
+.btn-view-certificate {
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  color: #ffffff;
+  font-family: var(--font-sans);
+  font-size: 12.5px;
+  font-weight: 700;
+  padding: 8px 14px;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.btn-view-certificate:hover {
+  background: #10b981;
+  border-color: #34d399;
+  color: #042410;
+  box-shadow: 0 0 14px rgba(52, 211, 153, 0.5);
+}
+
+/* ══════════════════════════════════════════════
+   MODAL WINDOWS & CERTIFICATE STYLES
+═══════════════════════════════════════════════ */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(4, 15, 8, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.modal-card {
+  background: linear-gradient(150deg, rgba(14, 38, 22, 0.98), rgba(6, 20, 11, 0.99));
+  border: 1px solid rgba(74, 222, 128, 0.35);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.85), 0 0 40px rgba(34, 197, 94, 0.2);
+  border-radius: var(--radius-lg);
+  color: #ffffff;
+  width: 100%;
+  max-width: 660px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: modalFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.portal-card {
+  max-width: 860px;
+}
+
+@keyframes modalFadeIn {
+  0% { transform: scale(0.94); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.cert-header-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.cert-emblem {
+  font-size: 28px;
+}
+.cert-header-title h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 800;
+  color: #ffffff;
+}
+.cert-dept {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: var(--emerald-mint);
+  letter-spacing: 0.02em;
+}
+
+.modal-close-btn {
+  background: transparent;
+  border: none;
+  font-size: 28px;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  padding: 2px 8px;
+  border-radius: 8px;
+  transition: all 0.15s ease;
+}
+.modal-close-btn:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.modal-body {
+  padding: 22px 24px;
+  overflow-y: auto;
+}
+
+/* Certificate Inner Layout */
+.cert-status-banner {
+  padding: 14px 18px;
+  border-radius: var(--radius-md);
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.cert-status-banner.approved {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.25), rgba(5, 150, 105, 0.4));
+  border: 1.5px solid #34d399;
+}
+.cert-status-banner.pending {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(217, 119, 6, 0.35));
+  border: 1.5px dashed #f59e0b;
+}
+.cert-status-banner.rejected {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(185, 28, 28, 0.35));
+  border: 1.5px solid #ef4444;
+}
+
+.cert-banner-icon {
+  font-size: 24px;
+}
+.cert-banner-text strong {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 15px;
+  color: #ffffff;
+}
+.cert-banner-text span {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.cert-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+@media (max-width: 580px) {
+  .cert-grid { grid-template-columns: 1fr; }
+}
+
+.cert-field {
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+}
+.cert-field-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--emerald-mint);
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.cert-field-value {
+  font-size: 13.5px;
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.cert-remarks-box {
+  background: rgba(0, 0, 0, 0.35);
+  border-left: 3px solid #34d399;
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+  margin-bottom: 22px;
+}
+.cert-remarks-box.pending {
+  border-left-color: #f59e0b;
+}
+.cert-remarks-box.rejected {
+  border-left-color: #ef4444;
+}
+
+.cert-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+/* Officer Portal Interior Layout */
+.officer-identity-bar {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  margin-bottom: 16px;
+}
+@media (max-width: 720px) {
+  .officer-identity-bar { grid-template-columns: 1fr; }
+}
+.officer-field label {
+  display: block;
+  font-size: 11px;
+  color: var(--emerald-mint);
+  font-weight: 700;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.officer-input {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: var(--radius-sm);
+  color: #ffffff;
+  font-family: var(--font-sans);
+  font-size: 12.5px;
+  padding: 6px 10px;
+  outline: none;
+  box-sizing: border-box;
+}
+.officer-input:focus {
+  border-color: #34d399;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.officer-telemetry-banner {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.12), rgba(16, 185, 129, 0.18));
+  border: 1px solid rgba(52, 211, 153, 0.3);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  margin-bottom: 18px;
+}
+@media (max-width: 640px) {
+  .officer-telemetry-banner { grid-template-columns: 1fr; }
+}
+.telemetry-item .t-label {
+  display: block;
+  font-size: 11px;
+  color: var(--emerald-mint);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.telemetry-item .t-val {
+  display: block;
+  font-size: 13px;
+  color: #ffffff;
+  margin-top: 2px;
+}
+
+.portal-filter-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.portal-quick-actions {
+  display: flex;
+  gap: 8px;
+}
+.btn-portal-action {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 700;
+  padding: 7px 12px;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+}
+.btn-portal-action.approve-all {
+  background: #10b981;
+  color: #042410;
+}
+.btn-portal-action.approve-all:hover {
+  background: #34d399;
+  box-shadow: 0 0 14px rgba(52, 211, 153, 0.6);
+}
+.btn-portal-action.reset-all {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+}
+.btn-portal-action.reset-all:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.portal-crop-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 480px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.portal-crop-card {
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  transition: all 0.18s ease;
+}
+.portal-crop-card.approved {
+  border-color: rgba(52, 211, 153, 0.45);
+  background: rgba(16, 185, 129, 0.1);
+}
+.portal-crop-card.pending {
+  border-color: rgba(245, 158, 11, 0.45);
+}
+.portal-crop-card.rejected {
+  border-color: rgba(239, 68, 68, 0.45);
+}
+
+.portal-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.portal-crop-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.portal-crop-name {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 800;
+  color: #ffffff;
+}
+.portal-crop-tag {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background: rgba(34, 197, 94, 0.2);
+  color: #6ee7b7;
+  border: 1px solid rgba(34, 197, 94, 0.35);
+}
+
+.portal-status-badge {
+  font-size: 11.5px;
+  font-weight: 800;
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.portal-status-badge.approved {
+  background: rgba(16, 185, 129, 0.25);
+  border: 1px solid #34d399;
+  color: #34d399;
+}
+.portal-status-badge.pending {
+  background: rgba(245, 158, 11, 0.2);
+  border: 1px dashed #f59e0b;
+  color: #fbbf24;
+}
+.portal-status-badge.rejected {
+  background: rgba(239, 68, 68, 0.2);
+  border: 1px solid #ef4444;
+  color: #fca5a5;
+}
+
+.portal-card-meta {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 8px;
+}
+
+.portal-card-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.portal-remarks-input {
+  flex: 1;
+  min-width: 200px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: var(--radius-sm);
+  color: #ffffff;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  padding: 6px 10px;
+}
+.portal-remarks-input:focus {
+  border-color: #34d399;
+  outline: none;
+}
+.portal-btn-group {
+  display: flex;
+  gap: 6px;
+}
+.btn-crop-act {
+  font-family: var(--font-sans);
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.btn-crop-act.act-approve {
+  background: #10b981;
+  color: #042410;
+}
+.btn-crop-act.act-approve:hover {
+  background: #34d399;
+  box-shadow: 0 0 10px rgba(52, 211, 153, 0.6);
+}
+.btn-crop-act.act-reject {
+  background: rgba(239, 68, 68, 0.25);
+  border: 1px solid #ef4444;
+  color: #fca5a5;
+}
+.btn-crop-act.act-reject:hover {
+  background: #ef4444;
+  color: #ffffff;
+}
+.btn-crop-act.act-pending {
+  background: rgba(245, 158, 11, 0.2);
+  border: 1px dashed #f59e0b;
+  color: #fbbf24;
+}
+.btn-crop-act.act-pending:hover {
+  background: #f59e0b;
+  color: #1a0f01;
 }
