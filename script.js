@@ -2462,7 +2462,6 @@ function setupCalculator() {
   if (selCrop) {
     selCrop.addEventListener('change', () => {
       syncCropCalculationUI();
-      calculateSeedRequirement();
     });
   }
 
@@ -2471,7 +2470,6 @@ function setupCalculator() {
     selMethod.addEventListener('change', () => {
       syncCustomRateField();
       updateCropBanner();
-      calculateSeedRequirement();
     });
   }
 
@@ -2484,7 +2482,6 @@ function setupCalculator() {
         if (areaInput) {
           areaInput.value = chip.dataset.area;
         }
-        calculateSeedRequirement();
       });
     });
   }
@@ -2496,23 +2493,20 @@ function setupCalculator() {
       areaChips.forEach(c => {
         c.classList.toggle('active', parseFloat(c.dataset.area) === currentVal);
       });
-      calculateSeedRequirement();
     });
   }
 
-  // 5. Custom Rate Input Change
-  if (customRateInput) {
-    customRateInput.addEventListener('input', () => {
-      calculateSeedRequirement();
-    });
-  }
+  // 5. Compute Button Click - ONLY WHEN USER CLICKS THIS BUTTON
+  calcBtn.addEventListener('click', () => {
+    calculateSeedRequirement();
+    const resultEl = $('calcResult');
+    if (resultEl) {
+      resultEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  });
 
-  // 6. Compute Button Click
-  calcBtn.addEventListener('click', calculateSeedRequirement);
-
-  // Initialize
+  // Initialize dropdowns without calculating down data
   updateCalculatorCropList();
-  calculateSeedRequirement();
 }
 
 // ============================================================
@@ -2537,6 +2531,10 @@ function renderLiveScreen(data) {
       container.innerHTML = '<div class="live-empty">Waiting for ESP32 screen update…</div>';
     } else {
       const isSplash = lines.length <= 2 && lines.every(l => l.trim().length <= 14 && !l.startsWith('>'));
+      const hasMenu = lines.some(l => l.trim().startsWith('>') || l.trim().match(/^\d+[\.\)]/));
+      const hasColon = lines.some(l => l.includes(':'));
+      const isIntro = !hasMenu && !hasColon && !isSplash && lines.length > 0;
+
       const linesHtml = lines.map((text, i) => {
         const trimmed = text.trim();
         // Check for navigation footer line (e.g. "D BACK   * HOME")
@@ -2552,6 +2550,9 @@ function renderLiveScreen(data) {
           cls += ' live-splash';
         } else if (i === 0 && trimmed.length <= 20) {
           cls += ' live-heading';
+        } else if (isIntro) {
+          // Introduction words (e.g. "SUMATHI", "LAKSHMI") come in the middle!
+          cls += ' live-subheading';
         } else if (i === 1 && !trimmed.startsWith('>') && !trimmed.match(/^\d/) && trimmed.length <= 22 && trimmed === trimmed.toUpperCase()) {
           // Subheading (e.g. "POND LEVEL", "CROP LIBRARY")
           cls += ' live-subheading';

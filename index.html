@@ -43,6 +43,7 @@
 <nav class="tab-bar-scroller" id="tabBarScroller" aria-label="Main Navigation">
   <div class="tab-bar">
     <button class="tab-button active" data-tab="tab-overview">Overview</button>
+    <button class="tab-button" data-tab="tab-about">About</button>
     <button class="tab-button" data-tab="tab-live">📟 Live Display</button>
     <button class="tab-button" data-tab="tab-crops">Crop Library</button>
     <button class="tab-button" data-tab="tab-problems">Farmer Problems</button>
@@ -166,26 +167,39 @@
   </div>
 
 
-  <!-- Keypad & Project Info Grid -->
-  <div class="info-grid">
-    <div class="card">
-      <h2>Keypad Navigation Guide</h2>
-      <p class="muted">Navigate using the ESP32 physical 4×4 keypad. The Android tablet functions as an ultra-clear, display-only dashboard.</p>
-      <div class="key-grid">
-        <div class="key-item"><div class="key-badge">A</div><div>Previous item / Up</div></div>
-        <div class="key-item"><div class="key-badge">B</div><div>Next item / Down</div></div>
-        <div class="key-item"><div class="key-badge">C</div><div>Select / Confirm</div></div>
-        <div class="key-item"><div class="key-badge">#</div><div>Confirm selection</div></div>
-        <div class="key-item"><div class="key-badge">D</div><div>Go back / Previous menu</div></div>
-        <div class="key-item"><div class="key-badge">*</div><div>Return to Home screen</div></div>
-        <div class="key-item"><div class="key-badge">0–9</div><div>Numeric data input</div></div>
-        <div class="key-item"><div class="key-badge">* (num)</div><div>Decimal point entry</div></div>
-      </div>
+  <!-- Keypad Navigation Guide -->
+  <div class="card">
+    <h2>Keypad Navigation Guide</h2>
+    <p class="muted">Navigate using the ESP32 physical 4×4 keypad. The Android tablet functions as an ultra-clear, display-only dashboard.</p>
+    <div class="key-grid">
+      <div class="key-item"><div class="key-badge">A</div><div>Previous item / Up</div></div>
+      <div class="key-item"><div class="key-badge">B</div><div>Next item / Down</div></div>
+      <div class="key-item"><div class="key-badge">C</div><div>Select / Confirm</div></div>
+      <div class="key-item"><div class="key-badge">#</div><div>Confirm selection</div></div>
+      <div class="key-item"><div class="key-badge">D</div><div>Go back / Previous menu</div></div>
+      <div class="key-item"><div class="key-badge">*</div><div>Return to Home screen</div></div>
+      <div class="key-item"><div class="key-badge">0–9</div><div>Numeric data input</div></div>
+      <div class="key-item"><div class="key-badge">* (num)</div><div>Decimal point entry</div></div>
+    </div>
+  </div>
+
+</section>
+
+<!-- ══════════════════════════════════════════════
+     TAB 2 — ABOUT FARMER ATI
+═══════════════════════════════════════════════ -->
+<section class="tab-page" id="tab-about">
+  <div class="card about-page-card">
+    <div class="about-hero">
+      <div class="about-badge">🌿 Agricultural Telemetry &amp; Decision Support</div>
+      <h2>About FARMER ATI</h2>
+      <p class="about-lead">A comprehensive <strong>Smart Agricultural &amp; Hydroponic Information System</strong> developed with an ESP32 microcontroller, SH1106 OLED display, and companion dashboard for Android tablets and smartphones.</p>
     </div>
 
-    <div class="card">
-      <h2>About FARMER ATI</h2>
-      <p>A comprehensive <strong>Smart Agricultural &amp; Hydroponic Information System</strong> developed with an ESP32 microcontroller, SH1106 OLED display, and companion dashboard for Android tablets and smartphones.</p>
+    <div class="about-section-divider"></div>
+
+    <div class="about-content-body">
+      <h3>Key System Capabilities &amp; Features</h3>
       <ul class="about-list">
         <li>🌾 <strong>Continuous Agricultural Weather Advisory:</strong> Real-time pesticide spray suitability ticker driven by live atmospheric telemetry.</li>
         <li>🌦️ <strong>Live Weather Telemetry:</strong> Automatic tablet GPS geolocation, precipitation probability, humidity, and temperature forecasting via Open-Meteo.</li>
@@ -195,11 +209,16 @@
         <li>🐛 <strong>Farmer Problem Solutions:</strong> 10 practical field pest, disease, and soil management guides with actionable remedies.</li>
         <li>🧮 <strong>Intelligent Planting Calculator:</strong> Crop-specific requirement modeling for seeds (kg), trees, suckers, setts, and seedlings based on TNAU agronomic rates.</li>
         <li>🌱 <strong>Nutrient Care Guide:</strong> Complete visual deficiency diagnosis across 11 primary, secondary, and micronutrients.</li>
-        <li>🏫 <strong>Kendriya Vidyalaya No. 2 · RSBVP 2026–27</strong></li>
       </ul>
     </div>
-  </div>
 
+    <div class="about-footer-card">
+      <div class="about-school-badge">🏫 Kendriya Vidyalaya No. 2 · RSBVP 2026–27</div>
+      <div class="about-guide-text">
+        <span>Project Guides / Teachers: <strong>Sumathi</strong> &bull; <strong>Lakshmi</strong></span>
+      </div>
+    </div>
+  </div>
 </section>
 
 <!-- ══════════════════════════════════════════════
