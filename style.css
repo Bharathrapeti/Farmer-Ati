@@ -2844,34 +2844,37 @@ a {
 
 /* Pending Approval Badge */
 .crop-approval-badge.pending {
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   background: rgba(245, 158, 11, 0.18);
   border: 1.5px dashed rgba(245, 158, 11, 0.75);
   color: #fbbf24;
-  font-size: 14px;
+  font-size: 15px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .crop-approval-badge.pending:hover {
-  transform: translateY(-50%) scale(1.08);
+  transform: translateY(-50%) scale(1.12);
   background: rgba(245, 158, 11, 0.3);
   border-color: #f59e0b;
 }
 
 /* Rejected Badge */
 .crop-approval-badge.rejected {
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   background: rgba(239, 68, 68, 0.25);
   border: 1.5px solid #ef4444;
   color: #fca5a5;
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .crop-approval-badge.rejected:hover {

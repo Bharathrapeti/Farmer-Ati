@@ -1827,25 +1827,19 @@ function buildCropLibrary() {
     const waterStr = d.WaterReq_L ? `${(d.WaterReq_L / 1000000).toFixed(1)}M L/acre (${d.WaterDepth_mm || '--'}mm)` : '';
 
     let badgeHtml = '';
-    let nameInlineTick = '';
-    let hintHtml = '';
 
     if (status === 'approved') {
       badgeHtml = `<div class="crop-approval-badge approved" data-crop="${esc(name)}" title="Officer Approved — Tap to view Certificate"><span class="badge-check">✓</span></div>`;
-      nameInlineTick = `<span class="approved-inline-tick" title="Officer Approved">✓</span>`;
-      hintHtml = `<span class="crop-hint status-approved">✓ Officer Approved</span>`;
     } else if (status === 'rejected') {
       badgeHtml = `<div class="crop-approval-badge rejected" data-crop="${esc(name)}" title="Rejected by Officer — Tap for remarks"><span class="badge-check">✕</span></div>`;
-      hintHtml = `<span class="crop-hint status-rejected">✕ Rejected</span>`;
     } else {
-      badgeHtml = `<div class="crop-approval-badge pending" data-crop="${esc(name)}" title="Pending Officer Approval — Tap to review"><span class="badge-pending-text">⏳</span></div>`;
-      hintHtml = `<span class="crop-hint status-pending">⏳ Pending Approval</span>`;
+      badgeHtml = `<div class="crop-approval-badge pending" data-crop="${esc(name)}" title="Pending Officer Approval — Tap to review"><span class="badge-check">⏳</span></div>`;
     }
 
     btn.innerHTML = `
-      <span class="crop-name">${getCropIcon(name)} ${esc(name)} ${nameInlineTick}</span>
+      <span class="crop-name">${getCropIcon(name)} ${esc(name)}</span>
       ${waterStr ? `<span class="crop-water-pill">💧 ${waterStr}</span>` : ''}
-      ${hintHtml}
+      <span class="crop-hint">${isRec ? 'Eligible for Mode' : 'Cultivation Guide'}</span>
       ${badgeHtml}
     `;
 
