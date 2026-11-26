@@ -1212,19 +1212,19 @@ if (scrollerEl) {
 // ============================================================
 
 function updatePondTelemetryUI(data) {
-  if (!data) return;
-
-  if (data.pm) pondTelemetry.mode = data.pm;
-  if (data.sr !== undefined) pondTelemetry.sensorDist = data.sr;
-  if (data.wd !== undefined) pondTelemetry.waterDepth = Number(data.wd) || 0;
-  if (data.wv !== undefined) pondTelemetry.waterLitres = data.wv !== null ? Number(data.wv) : null;
-  if (data.wp !== undefined) pondTelemetry.waterPct = data.wp !== null ? Number(data.wp) : null;
-  if (data.mo) pondTelemetry.month = data.mo;
-  if (data.se) pondTelemetry.season = data.se;
-  if (Array.isArray(data.rc)) pondTelemetry.recCrops = data.rc;
-  if (data.cc) pondTelemetry.currentCrop = data.cc;
-  if (data.tc !== undefined) pondTelemetry.tankWaterCm = data.tc !== null ? Number(data.tc) : null;
-  if (data.ss !== undefined) pondTelemetry.sensorStatus = data.ss;
+  if (data) {
+    if (data.pm) pondTelemetry.mode = data.pm;
+    if (data.sr !== undefined) pondTelemetry.sensorDist = data.sr;
+    if (data.wd !== undefined) pondTelemetry.waterDepth = Number(data.wd) || 0;
+    if (data.wv !== undefined) pondTelemetry.waterLitres = data.wv !== null ? Number(data.wv) : null;
+    if (data.wp !== undefined) pondTelemetry.waterPct = data.wp !== null ? Number(data.wp) : null;
+    if (data.mo) pondTelemetry.month = data.mo;
+    if (data.se) pondTelemetry.season = data.se;
+    if (Array.isArray(data.rc)) pondTelemetry.recCrops = data.rc;
+    if (data.cc) pondTelemetry.currentCrop = data.cc;
+    if (data.tc !== undefined) pondTelemetry.tankWaterCm = data.tc !== null ? Number(data.tc) : null;
+    if (data.ss !== undefined) pondTelemetry.sensorStatus = data.ss;
+  }
 
   const nowTime = new Date().toLocaleTimeString();
 
@@ -1694,27 +1694,33 @@ function buildCropLibrary() {
   const countAll = $('countAllCrops');
   if (countAll) countAll.textContent = allNames.length;
 
-  let filtered = allNames;
-
-  // Filter mode: recommended only
-  if (cropFilterMode === 'rec' && pondTelemetry.recCrops.length > 0) {
-    filtered = filtered.filter(name => pondTelemetry.recCrops.includes(name));
+  const countRecEl = $('countRecCrops');
+  if (countRecEl && pondTelemetry.recCrops) {
+    countRecEl.textContent = pondTelemetry.recCrops.length;
   }
 
-  // Search filter
-  if (cropSearchQuery.trim()) {
-    const q = cropSearchQuery.toLowerCase();
+  let filtered = [...allNames];
+
+  // Filter mode: recommended only
+  if (cropFilterMode === 'rec') {
+    filtered = filtered.filter(name => pondTelemetry.recCrops && pondTelemetry.recCrops.includes(name));
+  }
+
+  // Search filter (name, type, season, soil)
+  if (cropSearchQuery && cropSearchQuery.trim()) {
+    const q = cropSearchQuery.toLowerCase().trim();
     filtered = filtered.filter(name => {
       const d = CROPS[name];
+      if (!d) return false;
       return name.toLowerCase().includes(q) ||
-        (d.Type && d.Type.join(' ').toLowerCase().includes(q)) ||
-        (d.Season && d.Season.join(' ').toLowerCase().includes(q)) ||
-        (d.Soil && d.Soil.toLowerCase().includes(q));
+        (Array.isArray(d.Type) && d.Type.join(' ').toLowerCase().includes(q)) ||
+        (Array.isArray(d.Season) && d.Season.join(' ').toLowerCase().includes(q)) ||
+        (typeof d.Soil === 'string' && d.Soil.toLowerCase().includes(q));
     });
   }
 
-  // Sort so recommended crops based on pond level selection come first, followed by all remaining crops
-  if (pondTelemetry.recCrops && pondTelemetry.recCrops.length > 0) {
+  // Sort so recommended crops come first in All Crops view
+  if (cropFilterMode === 'all' && pondTelemetry.recCrops && pondTelemetry.recCrops.length > 0) {
     filtered.sort((a, b) => {
       const aRec = pondTelemetry.recCrops.includes(a);
       const bRec = pondTelemetry.recCrops.includes(b);
@@ -1728,13 +1734,22 @@ function buildCropLibrary() {
   }
 
   if (filtered.length === 0) {
-    grid.innerHTML = '<div class="muted" style="grid-column:1/-1; padding:20px; text-align:center;">No crops match your current filter.</div>';
+    grid.innerHTML = `<div class="muted" style="grid-column:1/-1; padding:30px 20px; text-align:center; font-size:15px; color:var(--text-muted);">${
+      cropFilterMode === 'rec'
+        ? '🌱 No crops currently meet the active pond water and seasonal recommendation criteria. Click <strong>All Crops</strong> to browse all 17 crops.'
+        : 'No crops match your current search query. Try clearing the search box.'
+    }</div>`;
+    const detail = $('cropDetail');
+    if (detail) {
+      detail.innerHTML = '<div class="muted" style="padding:20px; text-align:center;">No crops to display. Please adjust your filter or search query.</div>';
+    }
     return;
   }
 
   filtered.forEach(name => {
     const d = CROPS[name];
-    const isRec = pondTelemetry.recCrops.includes(name);
+    if (!d) return;
+    const isRec = Boolean(pondTelemetry.recCrops && pondTelemetry.recCrops.includes(name));
     const isVerified = isCropSoilVerified(name);
 
     const btn = document.createElement('button');
@@ -1757,16 +1772,16 @@ function buildCropLibrary() {
       ${badgeHtml}
     `;
 
-    // Important requirement: ONLY the pending/hourglass (⏳) mark triggers the Soil Suitability Modal
+    // Only the pending/hourglass (⏳) mark triggers the Soil Suitability Modal
     const pendingBadge = btn.querySelector('.crop-approval-badge.pending');
     if (pendingBadge) {
       pendingBadge.addEventListener('click', (e) => {
-        e.stopPropagation(); // Prevents triggering card click
+        e.stopPropagation();
         openSoilSuitabilityModal(name);
       });
     }
 
-    // Preserve existing green tick functionality: clicking green tick selects crop and does NOT trigger the modal
+    // Preserve existing green tick functionality: selects crop and does NOT trigger the modal
     const approvedBadge = btn.querySelector('.crop-approval-badge.approved');
     if (approvedBadge) {
       approvedBadge.addEventListener('click', (e) => {
@@ -4010,9 +4025,63 @@ window.addEventListener('click', (e) => {
   if (e.target === $('soilSuitabilityModal')) closeSoilSuitabilityModal();
 });
 
+// Close modals with Escape key & Keyboard Navigation for Web Browser
 window.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') closeSoilSuitabilityModal();
+  if (e.key === 'Escape') {
+    closeSoilSuitabilityModal();
+    return;
+  }
+
+  // If typing in input, textarea, or select, do not intercept
+  const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
+  if (tag === 'input' || tag === 'textarea' || tag === 'select' || (e.target && e.target.isContentEditable)) {
+    return;
+  }
+
+  const k = e.key ? e.key.toLowerCase() : '';
+  if (k === '1' || k === 'o') {
+    switchTab('tab-overview');
+  } else if (k === '2') {
+    switchTab('tab-about');
+  } else if (k === '3' || k === 'l') {
+    switchTab('tab-live');
+  } else if (k === '4' || k === 'c') {
+    // 4 or C -> Crop Library
+    switchTab('tab-crops');
+  } else if (k === '5' || k === 'p') {
+    // 5 or P -> Farmer Problems
+    switchTab('tab-problems');
+  } else if (k === '6' || k === 's') {
+    // 6 or S -> Seed Calculator
+    switchTab('tab-calculator');
+  } else if (k === '7' || k === 'n') {
+    // 7 or N -> Nutrient Care
+    switchTab('tab-nutrients');
+  } else if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+    const tabs = ['tab-overview', 'tab-about', 'tab-live', 'tab-crops', 'tab-problems', 'tab-calculator', 'tab-nutrients'];
+    const activeBtn = document.querySelector('.tab-button.active');
+    const curTab = activeBtn ? activeBtn.dataset.tab : tabs[0];
+    let idx = tabs.indexOf(curTab);
+    if (idx === -1) idx = 0;
+    if (e.key === 'ArrowRight') {
+      idx = (idx + 1) % tabs.length;
+    } else {
+      idx = (idx - 1 + tabs.length) % tabs.length;
+    }
+    switchTab(tabs[idx]);
+  }
 });
+
+// ============================================================
+// INITIALISE
+// ============================================================
+
+updatePondTelemetryUI();
+buildCropLibrary();
+buildProblems();
+setupCalculator();
+buildNutrientCare();
+initLiveWeather();
 
 // Update modal close in keydown Escape
 // (handled in keydown listener)
