@@ -370,9 +370,8 @@
     <p class="muted">All crops in the FARMER ATI agronomy database. The <span class="oled-badge">On OLED</span> badge marks the crop currently active on the ESP32.</p>
         <div class="library-filter-bar">
       <div class="filter-btn-group">
-        <button class="filter-btn active" id="btnFilterAllCrops" data-filter="all">All Crops (<span id="countAllCrops">16</span>)</button>
+        <button class="filter-btn active" id="btnFilterAllCrops" data-filter="all">All Crops (<span id="countAllCrops">17</span>)</button>
         <button class="filter-btn" id="btnFilterRecCrops" data-filter="rec">🌱 Recommended Only (<span id="countRecCrops">0</span>)</button>
-        <button class="filter-btn btn-officer-portal" id="btnOpenOfficerPortal" title="Open Agricultural Officer Recommendation Authorization Dashboard">👮‍♂️ Officer Portal <span class="officer-badge-count" id="officerPendingCount">0</span></button>
       </div>
       <div class="filter-search-box">
         <span class="search-icon">🔍</span>
@@ -511,92 +510,22 @@
      SITE FOOTER
 ═══════════════════════════════════════════════ -->
 <!-- ══════════════════════════════════════════════
-     MODAL: OFFICER APPROVAL CERTIFICATE / DETAILS
+     MODAL: CROP SOIL SUITABILITY VERIFICATION
 ═══════════════════════════════════════════════ -->
-<div class="modal-overlay" id="cropApprovalModal" style="display:none;" aria-hidden="true">
-  <div class="modal-card cert-card">
+<div class="modal-overlay" id="soilSuitabilityModal" style="display:none;" aria-hidden="true">
+  <div class="modal-card soil-modal-card">
     <div class="modal-header">
-      <div class="cert-header-title">
-        <span class="cert-emblem">🏛️</span>
+      <div class="soil-header-title">
+        <span class="soil-header-icon" id="soilModalCropIcon">🌾</span>
         <div>
-          <h3>Agricultural Officer Authorization</h3>
-          <p class="cert-dept">Dept. of Agriculture &amp; Farmers Welfare &bull; TNAU Verification</p>
+          <h3 id="soilModalTitle">Check Soil Suitability</h3>
+          <p class="soil-header-subtitle">Government Soil Health Card &bull; TNAU Agronomic Comparison</p>
         </div>
       </div>
-      <button class="modal-close-btn" id="btnCloseCertModal" aria-label="Close modal">&times;</button>
+      <button class="modal-close-btn" id="btnCloseSoilModal" aria-label="Close modal">&times;</button>
     </div>
-    <div class="modal-body" id="certModalBody">
-      <!-- Dynamically filled by renderCropApprovalCert -->
-    </div>
-  </div>
-</div>
-
-<!-- ══════════════════════════════════════════════
-     MODAL: OFFICER AUTHORIZATION PORTAL DASHBOARD
-═══════════════════════════════════════════════ -->
-<div class="modal-overlay" id="officerDashboardModal" style="display:none;" aria-hidden="true">
-  <div class="modal-card portal-card">
-    <div class="modal-header">
-      <div class="cert-header-title">
-        <span class="cert-emblem">👮‍♂️</span>
-        <div>
-          <h3>Officer Crop Recommendation Authorization Portal</h3>
-          <p class="cert-dept">Review &amp; Authorize Algorithm Crop Recommendations for Soil &amp; Water Conditions</p>
-        </div>
-      </div>
-      <button class="modal-close-btn" id="btnClosePortalModal" aria-label="Close portal">&times;</button>
-    </div>
-
-    <div class="modal-body">
-      <!-- Active Officer Credentials / Sign-off Bar -->
-      <div class="officer-identity-bar">
-        <div class="officer-field">
-          <label>Reviewing Officer Name</label>
-          <input type="text" id="inputOfficerName" value="Dr. R. Sundaram, Ph.D." class="officer-input">
-        </div>
-        <div class="officer-field">
-          <label>Designation / Post</label>
-          <input type="text" id="inputOfficerRole" value="Senior Agricultural Extension Officer (AEO)" class="officer-input">
-        </div>
-        <div class="officer-field">
-          <label>Department / Authority</label>
-          <input type="text" id="inputOfficerDept" value="Dept. of Agriculture &amp; Farmers Welfare, Tamil Nadu" class="officer-input">
-        </div>
-      </div>
-
-      <!-- Field Conditions & Telemetry Context -->
-      <div class="officer-telemetry-banner">
-        <div class="telemetry-item">
-          <span class="t-label">Soil Conditions</span>
-          <strong class="t-val" id="portalSoilCondition">Clay Loam (pH 6.8 &bull; Medium N, High K)</strong>
-        </div>
-        <div class="telemetry-item">
-          <span class="t-label">Pond Storage Status</span>
-          <strong class="t-val" id="portalPondCondition">Active Pond Storage &bull; 75% Irrigation Efficiency</strong>
-        </div>
-        <div class="telemetry-item">
-          <span class="t-label">Current Season</span>
-          <strong class="t-val" id="portalSeason">Samba / Thaladi (Tamil Nadu)</strong>
-        </div>
-      </div>
-
-      <!-- Portal Filter & Batch Actions Bar -->
-      <div class="portal-filter-bar">
-        <div class="filter-btn-group">
-          <button class="filter-btn active" id="portalFilterRec" data-portal-filter="rec">🌱 Recommended Crops (<span id="portalCountRec">0</span>)</button>
-          <button class="filter-btn" id="portalFilterAll" data-portal-filter="all">All Crops (<span id="portalCountAll">16</span>)</button>
-          <button class="filter-btn" id="portalFilterPending" data-portal-filter="pending">⏳ Pending Review (<span id="portalCountPending">0</span>)</button>
-        </div>
-        <div class="portal-quick-actions">
-          <button class="btn-portal-action approve-all" id="btnApproveAllRec">✓ Approve All Recommended</button>
-          <button class="btn-portal-action reset-all" id="btnResetApprovals">↺ Reset to Default</button>
-        </div>
-      </div>
-
-      <!-- Crops review list -->
-      <div class="portal-crop-list" id="portalCropList">
-        <!-- Rendered dynamically -->
-      </div>
+    <div class="modal-body" id="soilModalBody">
+      <!-- Dynamically filled: View 1 (Check & Compare), View 2 (Confirmation), or View 3 (Improvement) -->
     </div>
   </div>
 </div>
@@ -609,6 +538,7 @@
   </div>
 </footer>
 
-<script src="script.js?v=20261125_2"></script>
+<script src="soil_data.js?v=20261126"></script>
+<script src="script.js?v=20261126"></script>
 </body>
 </html>

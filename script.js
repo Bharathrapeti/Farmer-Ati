@@ -36,6 +36,7 @@ let lastScreenName    = '';
 // ── DOM helpers ───────────────────────────────────────────────
 const $  = id => document.getElementById(id);
 const $$ = sel => document.querySelectorAll(sel);
+const esc = s => (s == null ? '' : String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'));
 
 // ── Specific Crop Icons & Emojis ─────────────────────────────
 const CROP_ICONS = {
@@ -1332,11 +1333,10 @@ function updatePondTelemetryUI(data) {
     if (pondTelemetry.recCrops.length > 0) {
       chipsEl.innerHTML = pondTelemetry.recCrops.map(name => {
         const crop = CROPS[name];
-        const approval = getCropApproval(name);
-        const isApproved = approval && approval.status === 'approved';
+        const isVerified = isCropSoilVerified(name);
         const waterStr = crop && crop.WaterReq_L ? `${(crop.WaterReq_L / 1000000).toFixed(1)}M L/ac` : '';
-        return `<span class="crop-chip ${isApproved ? 'chip-approved' : ''}" data-crop="${esc(name)}">
-          <span>${getCropIcon(name)} ${esc(name)} ${isApproved ? '<strong class="chip-tick" title="Officer Approved">✓</strong>' : '<span class="chip-pending" title="Pending Approval">⏳</span>'}</span>
+        return `<span class="crop-chip ${isVerified ? 'chip-approved' : ''}" data-crop="${esc(name)}">
+          <span>${getCropIcon(name)} ${esc(name)} ${isVerified ? '<strong class="chip-tick" title="Soil Verified">✓</strong>' : '<span class="chip-pending" title="Soil Verification Pending">⏳</span>'}</span>
           ${waterStr ? `<span class="chip-water">${waterStr}</span>` : ''}
         </span>`;
       }).join('');
@@ -1360,407 +1360,325 @@ function updatePondTelemetryUI(data) {
 }
 
 // ============================================================
-// OFFICER CROP RECOMMENDATION APPROVAL SYSTEM
+// CROP SOIL SUITABILITY VERIFICATION SYSTEM
+// Farmer-facing workflow: Compares Government Soil Health Card
+// with crop-specific agronomic standards from ICAR & TNAU
 // ============================================================
 
-const STORAGE_KEY_APPROVALS = 'farmer_ati_crop_approvals';
+const STORAGE_KEY_SOIL_VERIFIED = 'farmer_ati_soil_verifications';
 
-const DEFAULT_OFFICER = {
-  name: 'Dr. R. Sundaram, Ph.D.',
-  role: 'Senior Agricultural Extension Officer (AEO)',
-  dept: 'Dept. of Agriculture & Farmers Welfare, Tamil Nadu'
+// Initial state: Paddy and Black Gram are pre-verified (green tick), others pending (hourglass)
+// exactly matching current UI and user's reference screenshot
+const INITIAL_SOIL_VERIFIED_SEED = {
+  'Paddy': true,
+  'Black Gram': true
 };
 
-const INITIAL_APPROVALS_SEED = {
-  'Paddy': {
-    status: 'approved',
-    officerName: 'Dr. R. Sundaram, Ph.D.',
-    officerRole: 'Senior Agricultural Extension Officer (AEO)',
-    department: 'Dept. of Agriculture & Farmers Welfare, Tamil Nadu',
-    timestamp: '2026-11-24T10:30:00.000Z',
-    formattedDate: '24 Nov 2026, 10:30 AM',
-    remarks: 'Verified soil texture (Clay Loam / Delta Alluvial, pH 6.8) and seasonal pond storage capacity (1250mm depth). Officially authorized for Samba sowing.',
-    authId: 'AEO-TN-2026-0842'
-  },
-  'Black Gram': {
-    status: 'approved',
-    officerName: 'S. Meenakshi, M.Sc. (Agri)',
-    officerRole: 'Agronomist & Pulse Specialist',
-    department: 'TNAU Agricultural Research Station',
-    timestamp: '2026-11-24T11:15:00.000Z',
-    formattedDate: '24 Nov 2026, 11:15 AM',
-    remarks: 'Approved as rice-fallow or residual moisture pulse crop. Low water requirement (350mm) fully satisfied by current pond reserve.',
-    authId: 'AEO-TN-2026-0914'
-  },
-  'Groundnut': {
-    status: 'pending',
-    officerName: 'Dr. R. Sundaram, Ph.D.',
-    officerRole: 'Senior Agricultural Extension Officer (AEO)',
-    department: 'Dept. of Agriculture & Farmers Welfare, Tamil Nadu',
-    timestamp: '',
-    formattedDate: 'Awaiting Officer Review',
-    remarks: 'Algorithm recommended based on light loam soil suitability. Field verification of moisture status pending.',
-    authId: 'AEO-TN-2026-PEND'
-  }
-};
-
-function loadCropApprovals() {
+function loadSoilVerifications() {
   try {
-    const saved = localStorage.getItem(STORAGE_KEY_APPROVALS);
-    if (saved) {
-      return JSON.parse(saved);
-    }
+    const saved = localStorage.getItem(STORAGE_KEY_SOIL_VERIFIED);
+    if (saved) return JSON.parse(saved);
   } catch (e) {
-    console.error('Failed to parse crop approvals from storage', e);
+    console.error('Failed to parse soil verifications from storage', e);
   }
-  saveCropApprovals(INITIAL_APPROVALS_SEED);
-  return INITIAL_APPROVALS_SEED;
+  saveSoilVerifications(INITIAL_SOIL_VERIFIED_SEED);
+  return INITIAL_SOIL_VERIFIED_SEED;
 }
 
-function saveCropApprovals(approvals) {
+function saveSoilVerifications(verifications) {
   try {
-    localStorage.setItem(STORAGE_KEY_APPROVALS, JSON.stringify(approvals));
+    localStorage.setItem(STORAGE_KEY_SOIL_VERIFIED, JSON.stringify(verifications));
   } catch (e) {
-    console.error('Failed to save crop approvals to storage', e);
+    console.error('Failed to save soil verifications', e);
   }
-  updateApprovalCounters();
 }
 
-function getCropApproval(cropName) {
-  const approvals = loadCropApprovals();
-  if (approvals[cropName]) {
-    return approvals[cropName];
-  }
-  const isRec = pondTelemetry.recCrops.includes(cropName);
-  return {
-    status: 'pending',
-    officerName: DEFAULT_OFFICER.name,
-    officerRole: DEFAULT_OFFICER.role,
-    department: DEFAULT_OFFICER.dept,
-    timestamp: '',
-    formattedDate: 'Awaiting Officer Review',
-    remarks: isRec
-      ? 'Algorithm-recommended for current soil & seasonal water availability. Awaiting designated Agricultural Officer sign-off.'
-      : 'General crop agronomy profile. Awaiting extension officer evaluation.',
-    authId: 'AEO-TN-2026-PEND'
-  };
+function isCropSoilVerified(cropName) {
+  const map = loadSoilVerifications();
+  return Boolean(map[cropName]);
 }
 
-function setCropApproval(cropName, status, remarks, customOfficer) {
-  const approvals = loadCropApprovals();
-  const now = new Date();
-  const dateStr = now.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-  const timeStr = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
-
-  const offName = customOfficer?.name || ($('inputOfficerName') ? $('inputOfficerName').value.trim() : DEFAULT_OFFICER.name) || DEFAULT_OFFICER.name;
-  const offRole = customOfficer?.role || ($('inputOfficerRole') ? $('inputOfficerRole').value.trim() : DEFAULT_OFFICER.role) || DEFAULT_OFFICER.role;
-  const offDept = customOfficer?.dept || ($('inputOfficerDept') ? $('inputOfficerDept').value.trim() : DEFAULT_OFFICER.dept) || DEFAULT_OFFICER.dept;
-
-  const authId = status === 'approved'
-    ? `AEO-TN-${now.getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`
-    : (status === 'rejected' ? `REJ-TN-${now.getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}` : 'AEO-TN-2026-PEND');
-
-  let finalRemarks = remarks;
-  if (!finalRemarks) {
-    if (status === 'approved') {
-      finalRemarks = `Authorized by ${offName}. Soil health, irrigation capacity, and seasonal sowing calendar verified optimal for 1-acre model.`;
-    } else if (status === 'rejected') {
-      finalRemarks = `Rejected by ${offName}. Water requirement exceeds safe pond reserve or soil drainage requires amendment before sowing.`;
-    } else {
-      finalRemarks = `Awaiting official review by ${offName}.`;
-    }
-  }
-
-  approvals[cropName] = {
-    status: status,
-    officerName: offName,
-    officerRole: offRole,
-    department: offDept,
-    timestamp: status !== 'pending' ? now.toISOString() : '',
-    formattedDate: status !== 'pending' ? `${dateStr}, ${timeStr}` : 'Awaiting Officer Review',
-    remarks: finalRemarks,
-    authId: authId
-  };
-
-  saveCropApprovals(approvals);
-
+function setCropSoilVerified(cropName, isVerified) {
+  const map = loadSoilVerifications();
+  map[cropName] = Boolean(isVerified);
+  saveSoilVerifications(map);
   buildCropLibrary();
   if (selectedCrop === cropName) {
     renderCropDetail(cropName);
   }
-  updatePondTelemetryUI();
-  renderOfficerPortalList();
 }
 
-function updateApprovalCounters() {
-  const approvals = loadCropApprovals();
-  let pendingCount = 0;
-  pondTelemetry.recCrops.forEach(name => {
-    const st = approvals[name]?.status || 'pending';
-    if (st === 'pending') pendingCount++;
-  });
-  const el = $('officerPendingCount');
-  if (el) el.textContent = `${pendingCount} Pending`;
+let activeSoilModalCrop = 'Paddy';
+
+// Open the Soil Suitability Modal for a specific crop (Triggered ONLY by clicking pending hourglass ⏳)
+function openSoilSuitabilityModal(cropName) {
+  const data = getCropSoilData(cropName);
+  if (!data) return;
+
+  activeSoilModalCrop = cropName;
+  const modal = $('soilSuitabilityModal');
+  if (!modal) return;
+
+  // Set modal header icon & title
+  const iconEl = $('soilModalCropIcon');
+  if (iconEl) iconEl.textContent = data.icon || getCropIcon(cropName);
+
+  const titleEl = $('soilModalTitle');
+  if (titleEl) titleEl.textContent = `Check Soil Suitability for ${cropName}`;
+
+  // Start with View 1 (Comparison View)
+  renderSoilComparisonView(cropName);
+
+  modal.style.display = 'flex';
+  modal.setAttribute('aria-hidden', 'false');
+  document.body.style.overflow = 'hidden';
 }
 
-function openCropApprovalModal(cropName) {
-  const d = CROPS[cropName];
-  if (!d) return;
-  const approval = getCropApproval(cropName);
-  const isRec = pondTelemetry.recCrops.includes(cropName);
-  const modal = $('cropApprovalModal');
-  const body = $('certModalBody');
-  if (!modal || !body) return;
+function closeSoilSuitabilityModal() {
+  const modal = $('soilSuitabilityModal');
+  if (!modal) return;
+  modal.style.display = 'none';
+  modal.setAttribute('aria-hidden', 'true');
+  document.body.style.overflow = '';
+}
 
-  const status = approval.status || 'pending';
-  const isApproved = status === 'approved';
-  const isRejected = status === 'rejected';
-
-  let bannerClass = isApproved ? 'approved' : (isRejected ? 'rejected' : 'pending');
-  let bannerIcon = isApproved ? '✓' : (isRejected ? '✕' : '⏳');
-  let bannerTitle = isApproved
-    ? 'OFFICIALLY AUTHORIZED & APPROVED FOR CULTIVATION'
-    : (isRejected ? 'RECOMMENDATION REJECTED / NOT ADVISABLE' : 'PENDING AGRICULTURAL OFFICER AUTHORIZATION');
-  let bannerSub = isApproved
-    ? `Authorized by ${esc(approval.officerName || DEFAULT_OFFICER.name)} on ${esc(approval.formattedDate)}`
-    : (isRejected ? `Disapproved by ${esc(approval.officerName || DEFAULT_OFFICER.name)} on ${esc(approval.formattedDate)}` : 'Automatic recommendation waiting for extension officer review & sign-off');
-
-  const waterFormatted = d.WaterReq_L
-    ? `${(d.WaterReq_L / 1000000).toFixed(1)}M L/acre (~${d.WaterDepth_mm}mm total)`
-    : 'Not specified';
+// ── View 1: Soil Comparison & Soil Health Card Instructions ──
+function renderSoilComparisonView(cropName) {
+  const body = $('soilModalBody');
+  const d = getCropSoilData(cropName);
+  if (!body || !d) return;
 
   body.innerHTML = `
-    <div class="cert-status-banner ${bannerClass}">
-      <span class="cert-banner-icon">${bannerIcon}</span>
-      <div class="cert-banner-text">
-        <strong>${bannerTitle}</strong>
-        <span>${bannerSub}</span>
+    <!-- Section A: Crop Information & Importance -->
+    <div class="soil-importance-banner">
+      <span class="soil-importance-icon">🌱</span>
+      <div class="soil-importance-text">
+        <h4>Why Check Soil Conditions Before Sowing ${esc(cropName)}?</h4>
+        <p>${esc(d.importance)}</p>
       </div>
     </div>
 
-    <div class="cert-grid">
-      <div class="cert-field">
-        <div class="cert-field-label">Crop Name & Classification</div>
-        <div class="cert-field-value">${getCropIcon(cropName)} ${esc(cropName)} (${esc(d.Type ? d.Type.join(', ') : 'Standard Crop')})</div>
+    <!-- Section B: Ideal Soil Conditions Table -->
+    <div class="soil-table-section">
+      <div class="soil-section-title">
+        <span>📊</span> Recommended Soil Parameters for ${esc(cropName)}
       </div>
-      <div class="cert-field">
-        <div class="cert-field-label">Official Authorization ID</div>
-        <div class="cert-field-value"><code>${esc(approval.authId || 'AEO-TN-2026-PEND')}</code></div>
+      <div class="soil-table-wrap">
+        <table class="soil-table">
+          <thead>
+            <tr>
+              <th>Soil Parameter</th>
+              <th>Recommended Condition / Reference</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="soil-table-param"><span class="param-icon">🧪</span>Soil pH</td>
+              <td><strong>${esc(d.ph)}</strong></td>
+            </tr>
+            <tr>
+              <td class="soil-table-param"><span class="param-icon">⚡</span>Electrical Conductivity (EC)</td>
+              <td>${esc(d.ec)}</td>
+            </tr>
+            <tr>
+              <td class="soil-table-param"><span class="param-icon">🍂</span>Organic Carbon</td>
+              <td>${esc(d.organicCarbon)}</td>
+            </tr>
+            <tr>
+              <td class="soil-table-param"><span class="param-icon">🌿</span>Available Nitrogen (N)</td>
+              <td>${esc(d.nitrogen)}</td>
+            </tr>
+            <tr>
+              <td class="soil-table-param"><span class="param-icon">🌱</span>Available Phosphorus (P)</td>
+              <td>${esc(d.phosphorus)}</td>
+            </tr>
+            <tr>
+              <td class="soil-table-param"><span class="param-icon">🥔</span>Available Potassium (K)</td>
+              <td>${esc(d.potassium)}</td>
+            </tr>
+            <tr>
+              <td class="soil-table-param"><span class="param-icon">🏔️</span>Suitable Soil Types</td>
+              <td>${esc(d.soilType)}</td>
+            </tr>
+            <tr>
+              <td class="soil-table-param"><span class="param-icon">💧</span>Drainage Requirements</td>
+              <td>${esc(d.drainage)}</td>
+            </tr>
+            <tr>
+              <td class="soil-table-param"><span class="param-icon">📋</span>Key Soil Conditions</td>
+              <td>${esc(d.conditions)}</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
-      <div class="cert-field">
-        <div class="cert-field-label">Authorizing Officer</div>
-        <div class="cert-field-value">${esc(approval.officerName || DEFAULT_OFFICER.name)}</div>
-      </div>
-      <div class="cert-field">
-        <div class="cert-field-label">Designation & Department</div>
-        <div class="cert-field-value">${esc(approval.officerRole || DEFAULT_OFFICER.role)} &bull; ${esc(approval.department || DEFAULT_OFFICER.dept)}</div>
-      </div>
-      <div class="cert-field">
-        <div class="cert-field-label">Date & Time of Authorization</div>
-        <div class="cert-field-value">${esc(approval.formattedDate || 'Awaiting Review')}</div>
-      </div>
-      <div class="cert-field">
-        <div class="cert-field-label">Crop Water Requirement</div>
-        <div class="cert-field-value">💧 ${waterFormatted}</div>
-      </div>
-      <div class="cert-field">
-        <div class="cert-field-label">Soil Suitability Assessment</div>
-        <div class="cert-field-value">🌱 ${esc(d.Soil || 'Standard agricultural soil')}</div>
-      </div>
-      <div class="cert-field">
-        <div class="cert-field-label">Algorithm Recommendation Source</div>
-        <div class="cert-field-value">${isRec ? '🟢 Verified Soil & Seasonal Pond Telemetry' : '⚪ General Agronomy Catalog'}</div>
+      <div class="soil-table-note">
+        * Note: These are recommended reference values for optimal growth under Indian agricultural conditions, not universal limits for every soil.
       </div>
     </div>
 
-    <div class="cert-remarks-box ${bannerClass}">
-      <div class="cert-field-label" style="margin-bottom:6px;">Officer Agronomic Remarks & Certification Notes</div>
-      <div style="font-size:13.5px; line-height:1.5; color:#ffffff; font-style:italic;">"${esc(approval.remarks || 'No remarks provided.')}"</div>
-    </div>
-
-    <!-- Quick Officer Action Controls -->
-    <div style="background:rgba(0,0,0,0.25); border:1px solid rgba(255,255,255,0.1); border-radius:var(--radius-sm); padding:12px; margin-bottom:18px;">
-      <div style="font-size:11px; text-transform:uppercase; color:var(--emerald-mint); font-weight:700; margin-bottom:8px;">👮‍♂️ Officer Decision Action</div>
-      <div style="display:flex; gap:8px; flex-wrap:wrap;">
-        <button class="btn-crop-act act-approve" id="btnCertApprove" style="padding:8px 16px; font-size:12.5px;">✓ Authorize & Approve Crop</button>
-        <button class="btn-crop-act act-pending" id="btnCertPending" style="padding:8px 16px; font-size:12.5px;">⏳ Mark as Pending Review</button>
-        <button class="btn-crop-act act-reject" id="btnCertReject" style="padding:8px 16px; font-size:12.5px;">✕ Reject / Not Advisable</button>
+    <!-- Section C: Government Soil Health Card Comparison Instructions -->
+    <div class="soil-card-guide-box">
+      <div class="soil-guide-header">
+        <span>📜</span>
+        <strong>Government Soil Health Card Comparison Instructions</strong>
       </div>
+      <ol class="soil-guide-list">
+        <li><strong>Locate Soil pH:</strong> Check if your report's pH value matches the recommended range for ${esc(cropName)} above.</li>
+        <li><strong>Verify Salinity (EC):</strong> Ensure your soil's Electrical Conductivity (dS/m) is below the threshold to prevent seedling scorch.</li>
+        <li><strong>Review Organic Carbon (%):</strong> High organic carbon (&gt; 0.60%) ensures soil aeration, microbial activity, and moisture retention.</li>
+        <li><strong>Check Available N, P, and K:</strong> Compare test ratings with standard university crop guidance for balanced basal and top-dressing.</li>
+        <li><strong>Inspect Soil Drainage:</strong> Ensure your field's physical soil texture and water runoff capacity align with this crop's root zone needs.</li>
+      </ol>
     </div>
 
-    <div class="cert-actions">
-      <button class="btn-view-certificate" id="btnCertClose">Close</button>
+    <!-- Section D: Decision Action Buttons (YES / NO) -->
+    <div class="soil-decision-bar">
+      <button class="btn-soil-match" id="btnSoilMatches">✓ Yes, my soil matches</button>
+      <button class="btn-soil-nomatch" id="btnSoilDoesNotMatch">✕ No, my soil doesn't match</button>
     </div>
   `;
 
-  $('btnCertApprove').addEventListener('click', () => {
-    setCropApproval(cropName, 'approved');
-    openCropApprovalModal(cropName);
-  });
-  $('btnCertPending').addEventListener('click', () => {
-    setCropApproval(cropName, 'pending');
-    openCropApprovalModal(cropName);
-  });
-  $('btnCertReject').addEventListener('click', () => {
-    setCropApproval(cropName, 'rejected');
-    openCropApprovalModal(cropName);
-  });
-  $('btnCertClose').addEventListener('click', closeCropApprovalModal);
+  // Wire YES button -> Confirmation View
+  const btnYes = $('btnSoilMatches');
+  if (btnYes) {
+    btnYes.addEventListener('click', () => renderSoilConfirmationView(cropName));
+  }
 
-  modal.style.display = 'flex';
-  modal.setAttribute('aria-hidden', 'false');
-}
-
-function closeCropApprovalModal() {
-  const modal = $('cropApprovalModal');
-  if (modal) {
-    modal.style.display = 'none';
-    modal.setAttribute('aria-hidden', 'true');
+  // Wire NO button -> Improvement Recommendations View
+  const btnNo = $('btnSoilDoesNotMatch');
+  if (btnNo) {
+    btnNo.addEventListener('click', () => renderSoilImprovementView(cropName));
   }
 }
 
-let portalCurrentFilter = 'rec'; // 'rec', 'all', 'pending'
+// ── View 2: Confirmation View (Farmer clicks YES) ──
+function renderSoilConfirmationView(cropName) {
+  const body = $('soilModalBody');
+  const d = getCropSoilData(cropName);
+  if (!body || !d) return;
 
-function openOfficerDashboardModal() {
-  const modal = $('officerDashboardModal');
-  if (!modal) return;
+  body.innerHTML = `
+    <div class="soil-success-view">
+      <div class="soil-success-icon-wrap">✓</div>
+      <h3 class="soil-success-title">Your soil conditions appear suitable!</h3>
+      
+      <div class="soil-success-message">
+        Based on your comparison with the recommended soil conditions for <strong>${esc(cropName)}</strong>, your soil appears suitable for cultivation. You can proceed with cultivation while also considering weather conditions, water availability, seed selection and local agricultural recommendations.
+      </div>
 
-  const soilEl = $('portalSoilCondition');
-  if (soilEl) soilEl.textContent = 'Clay Loam to Alluvial (pH 6.8 · Samba/Thaladi Optimal)';
-
-  const pondEl = $('portalPondCondition');
-  if (pondEl) {
-    if (pondTelemetry.mode === 'pond') {
-      pondEl.textContent = `Active Pond Mode · ${pondTelemetry.waterLitres ? (pondTelemetry.waterLitres / 1000).toFixed(0) + ' m³ reserve' : 'Sensor Active'}`;
-    } else {
-      pondEl.textContent = 'Seasonal Default Mode · 75% Irrigation Efficiency';
-    }
-  }
-
-  const seasonEl = $('portalSeason');
-  if (seasonEl) {
-    seasonEl.textContent = `${pondTelemetry.month} · ${pondTelemetry.season}`;
-  }
-
-  renderOfficerPortalList();
-
-  modal.style.display = 'flex';
-  modal.setAttribute('aria-hidden', 'false');
-}
-
-function closeOfficerDashboardModal() {
-  const modal = $('officerDashboardModal');
-  if (modal) {
-    modal.style.display = 'none';
-    modal.setAttribute('aria-hidden', 'true');
-  }
-}
-
-function renderOfficerPortalList() {
-  const listEl = $('portalCropList');
-  if (!listEl) return;
-  listEl.innerHTML = '';
-
-  const allNames = Object.keys(CROPS);
-  const approvals = loadCropApprovals();
-
-  const recCount = pondTelemetry.recCrops.length;
-  let pendingCount = 0;
-  pondTelemetry.recCrops.forEach(name => {
-    const st = approvals[name]?.status || 'pending';
-    if (st === 'pending') pendingCount++;
-  });
-
-  if ($('portalCountRec')) $('portalCountRec').textContent = recCount;
-  if ($('portalCountAll')) $('portalCountAll').textContent = allNames.length;
-  if ($('portalCountPending')) $('portalCountPending').textContent = pendingCount;
-  if ($('officerPendingCount')) $('officerPendingCount').textContent = `${pendingCount} Pending`;
-
-  let displayNames = allNames;
-  if (portalCurrentFilter === 'rec') {
-    displayNames = allNames.filter(name => pondTelemetry.recCrops.includes(name));
-  } else if (portalCurrentFilter === 'pending') {
-    displayNames = allNames.filter(name => {
-      const st = approvals[name]?.status || (pondTelemetry.recCrops.includes(name) ? 'pending' : 'pending');
-      return st === 'pending';
-    });
-  }
-
-  displayNames.sort((a, b) => {
-    const aRec = pondTelemetry.recCrops.includes(a);
-    const bRec = pondTelemetry.recCrops.includes(b);
-    if (aRec && !bRec) return -1;
-    if (!aRec && bRec) return 1;
-    return a.localeCompare(b);
-  });
-
-  if (displayNames.length === 0) {
-    listEl.innerHTML = '<div class="muted" style="text-align:center; padding:30px;">No crops found for this filter.</div>';
-    return;
-  }
-
-  displayNames.forEach(name => {
-    const d = CROPS[name];
-    const isRec = pondTelemetry.recCrops.includes(name);
-    const approval = getCropApproval(name);
-    const status = approval.status || 'pending';
-
-    const card = document.createElement('div');
-    card.className = `portal-crop-card ${status}`;
-
-    let statusPill = '';
-    if (status === 'approved') {
-      statusPill = '<span class="portal-status-badge approved">✓ Approved</span>';
-    } else if (status === 'rejected') {
-      statusPill = '<span class="portal-status-badge rejected">✕ Rejected</span>';
-    } else {
-      statusPill = '<span class="portal-status-badge pending">⏳ Pending Approval</span>';
-    }
-
-    const waterStr = d.WaterReq_L ? `${(d.WaterReq_L / 1000000).toFixed(1)}M L/acre (${d.WaterDepth_mm}mm)` : '--';
-
-    card.innerHTML = `
-      <div class="portal-card-top">
-        <div class="portal-crop-info">
-          <span class="portal-crop-name">${getCropIcon(name)} ${esc(name)}</span>
-          ${isRec ? '<span class="portal-crop-tag">🌱 Recommended by Algorithm</span>' : '<span style="font-size:11px; color:rgba(255,255,255,0.5);">Catalog Crop</span>'}
+      <div class="soil-success-summary-grid">
+        <div class="soil-success-pill">
+          <div class="soil-success-pill-lbl">Optimal pH Range</div>
+          <div class="soil-success-pill-val">${esc(d.ph.split('(')[0])}</div>
         </div>
-        ${statusPill}
-      </div>
-
-      <div class="portal-card-meta">
-        <span>💧 Water: <strong>${waterStr}</strong></span> &bull; 
-        <span>⏳ Duration: <strong>${esc(d.Duration || '--')}</strong></span> &bull; 
-        <span>🌱 Soil: <strong>${esc(d.Soil || '--')}</strong></span>
-        ${approval.formattedDate ? ` &bull; <span>Sign-off: <em>${esc(approval.formattedDate)} (${esc(approval.officerName || 'AEO')})</em></span>` : ''}
-      </div>
-
-      <div class="portal-card-controls">
-        <input type="text" class="portal-remarks-input" id="portalRem_${name.replace(/[^a-zA-Z0-9]/g, '_')}" 
-               value="${esc(approval.remarks || '')}" placeholder="Officer remarks / authorization notes...">
-        <div class="portal-btn-group">
-          <button class="btn-crop-act act-approve" data-crop="${esc(name)}">✓ Approve</button>
-          <button class="btn-crop-act act-pending" data-crop="${esc(name)}">⏳ Pending</button>
-          <button class="btn-crop-act act-reject" data-crop="${esc(name)}">✕ Reject</button>
+        <div class="soil-success-pill">
+          <div class="soil-success-pill-lbl">Salinity (EC) Limit</div>
+          <div class="soil-success-pill-val">${esc(d.ec.split('(')[0])}</div>
+        </div>
+        <div class="soil-success-pill">
+          <div class="soil-success-pill-lbl">Soil Texture</div>
+          <div class="soil-success-pill-val">${esc(d.soilType.split(',')[0])}</div>
         </div>
       </div>
-    `;
 
-    card.querySelector('.act-approve').addEventListener('click', () => {
-      const remInput = card.querySelector('.portal-remarks-input');
-      setCropApproval(name, 'approved', remInput ? remInput.value.trim() : '');
-    });
-    card.querySelector('.act-pending').addEventListener('click', () => {
-      const remInput = card.querySelector('.portal-remarks-input');
-      setCropApproval(name, 'pending', remInput ? remInput.value.trim() : '');
-    });
-    card.querySelector('.act-reject').addEventListener('click', () => {
-      const remInput = card.querySelector('.portal-remarks-input');
-      setCropApproval(name, 'rejected', remInput ? remInput.value.trim() : '');
-    });
+      <button class="btn-soil-proceed" id="btnSoilContinue">Continue with Cultivation</button>
+    </div>
+  `;
 
-    listEl.appendChild(card);
-  });
+  const btnCont = $('btnSoilContinue');
+  if (btnCont) {
+    btnCont.addEventListener('click', () => {
+      setCropSoilVerified(cropName, true);
+      closeSoilSuitabilityModal();
+      selectCrop(cropName);
+    });
+  }
+}
+
+// ── View 3: Soil Improvement Recommendations (Farmer clicks NO) ──
+function renderSoilImprovementView(cropName) {
+  const body = $('soilModalBody');
+  const d = getCropSoilData(cropName);
+  if (!body || !d) return;
+
+  const imp = d.improvement || {};
+
+  body.innerHTML = `
+    <div class="soil-improvement-view">
+      <div class="soil-improve-intro">
+        If your soil-testing report does not match the ideal conditions for <strong>${esc(cropName)}</strong>, take these crop-specific agronomic corrective steps before sowing to prepare your farmland.
+      </div>
+
+      <div class="soil-rec-grid">
+        <div class="soil-rec-card">
+          <div class="soil-rec-header">
+            <span class="soil-rec-icon">🧪</span>
+            <h4>Soil pH Management</h4>
+          </div>
+          <p class="soil-rec-body">${esc(imp.ph || 'Adjust soil reaction as per soil test report.')}</p>
+        </div>
+
+        <div class="soil-rec-card">
+          <div class="soil-rec-header">
+            <span class="soil-rec-icon">🍂</span>
+            <h4>Organic Carbon Improvement</h4>
+          </div>
+          <p class="soil-rec-body">${esc(imp.organicCarbon || 'Apply well-decomposed FYM, compost, or incorporate green manure crops.')}</p>
+        </div>
+
+        <div class="soil-rec-card">
+          <div class="soil-rec-header">
+            <span class="soil-rec-icon">🌾</span>
+            <h4>Nutrient Management (N, P, K)</h4>
+          </div>
+          <p class="soil-rec-body">${esc(imp.nutrients || 'Apply balanced fertilizers and biofertilizers based on Soil Health Card testing.')}</p>
+        </div>
+
+        <div class="soil-rec-card">
+          <div class="soil-rec-header">
+            <span class="soil-rec-icon">💧</span>
+            <h4>Drainage & Soil Structure</h4>
+          </div>
+          <p class="soil-rec-body">${esc(imp.drainage || 'Ensure appropriate field layout, beds, and channels for root aeration.')}</p>
+        </div>
+
+        <div class="soil-rec-card">
+          <div class="soil-rec-header">
+            <span class="soil-rec-icon">🧂</span>
+            <h4>Salinity (EC) Management</h4>
+          </div>
+          <p class="soil-rec-body">${esc(imp.salinity || 'Leach excess salts with good quality rainwater/pond water; avoid saline irrigation.')}</p>
+        </div>
+
+        <div class="soil-rec-card">
+          <div class="soil-rec-header">
+            <span class="soil-rec-icon">🌿</span>
+            <h4>Key Agronomic Advice for ${esc(cropName)}</h4>
+          </div>
+          <p class="soil-rec-body">${esc(imp.cropSpecific || 'Follow regional TNAU agronomic schedule and timely pest scouting.')}</p>
+        </div>
+      </div>
+
+      <div class="soil-improve-notice">
+        Note: Exact amendment quantities (such as agricultural lime, gypsum, or chemical fertilizers) should be calculated based on your specific Government Soil Health Card values and regional guidance from your local Agricultural Department or KVK.
+      </div>
+
+      <div class="soil-improve-btn-row">
+        <button class="btn-soil-recheck" id="btnSoilRecheck">↺ Recheck Soil Conditions</button>
+        <button class="btn-soil-back" id="btnSoilBack">← Back to Crops</button>
+      </div>
+    </div>
+  `;
+
+  const btnRecheck = $('btnSoilRecheck');
+  if (btnRecheck) {
+    btnRecheck.addEventListener('click', () => renderSoilComparisonView(cropName));
+  }
+
+  const btnBack = $('btnSoilBack');
+  if (btnBack) {
+    btnBack.addEventListener('click', () => closeSoilSuitabilityModal());
+  }
 }
 
 // ============================================================
@@ -1817,8 +1735,7 @@ function buildCropLibrary() {
   filtered.forEach(name => {
     const d = CROPS[name];
     const isRec = pondTelemetry.recCrops.includes(name);
-    const approval = getCropApproval(name);
-    const status = approval.status || 'pending';
+    const isVerified = isCropSoilVerified(name);
 
     const btn = document.createElement('button');
     btn.className = 'crop-btn' + (isRec ? ' is-recommended' : '');
@@ -1827,13 +1744,10 @@ function buildCropLibrary() {
     const waterStr = d.WaterReq_L ? `${(d.WaterReq_L / 1000000).toFixed(1)}M L/acre (${d.WaterDepth_mm || '--'}mm)` : '';
 
     let badgeHtml = '';
-
-    if (status === 'approved') {
-      badgeHtml = `<div class="crop-approval-badge approved" data-crop="${esc(name)}" title="Officer Approved — Tap to view Certificate"><span class="badge-check">✓</span></div>`;
-    } else if (status === 'rejected') {
-      badgeHtml = `<div class="crop-approval-badge rejected" data-crop="${esc(name)}" title="Rejected by Officer — Tap for remarks"><span class="badge-check">✕</span></div>`;
+    if (isVerified) {
+      badgeHtml = `<div class="crop-approval-badge approved" data-crop="${esc(name)}" title="Soil Suitable — Verified"><span class="badge-check">✓</span></div>`;
     } else {
-      badgeHtml = `<div class="crop-approval-badge pending" data-crop="${esc(name)}" title="Pending Officer Approval — Tap to review"><span class="badge-check">⏳</span></div>`;
+      badgeHtml = `<div class="crop-approval-badge pending" data-crop="${esc(name)}" title="Check Soil Suitability (Soil Health Card Comparison)"><span class="badge-check">⏳</span></div>`;
     }
 
     btn.innerHTML = `
@@ -1843,15 +1757,25 @@ function buildCropLibrary() {
       ${badgeHtml}
     `;
 
-    // Clicking the approval badge opens the official certificate modal
-    const badgeEl = btn.querySelector('.crop-approval-badge');
-    if (badgeEl) {
-      badgeEl.addEventListener('click', (e) => {
-        e.stopPropagation();
-        openCropApprovalModal(name);
+    // Important requirement: ONLY the pending/hourglass (⏳) mark triggers the Soil Suitability Modal
+    const pendingBadge = btn.querySelector('.crop-approval-badge.pending');
+    if (pendingBadge) {
+      pendingBadge.addEventListener('click', (e) => {
+        e.stopPropagation(); // Prevents triggering card click
+        openSoilSuitabilityModal(name);
       });
     }
 
+    // Preserve existing green tick functionality: clicking green tick selects crop and does NOT trigger the modal
+    const approvedBadge = btn.querySelector('.crop-approval-badge.approved');
+    if (approvedBadge) {
+      approvedBadge.addEventListener('click', (e) => {
+        e.stopPropagation();
+        selectCrop(name);
+      });
+    }
+
+    // Clicking anywhere else on the crop card opens the cultivation guide as usual
     btn.addEventListener('click', () => selectCrop(name));
     grid.appendChild(btn);
   });
@@ -1876,8 +1800,7 @@ function renderCropDetail(name) {
   if (!detail) return;
 
   const isRec = pondTelemetry.recCrops.includes(name);
-  const approval = getCropApproval(name);
-  const status = approval.status || 'pending';
+  const isVerified = isCropSoilVerified(name);
 
   const makeList = (title, items) => {
     if (!items || !items.length) return '';
@@ -1899,24 +1822,16 @@ function renderCropDetail(name) {
     ? `${d.WaterReq_L.toLocaleString()} Litres/acre (~${d.WaterDepth_mm} mm total crop water requirement)`
     : 'Not specified';
 
-  let bannerClass = status === 'approved' ? 'approved' : (status === 'rejected' ? 'rejected' : 'pending');
-  let authTitle = status === 'approved'
-    ? 'Approved by Agricultural Extension Officer'
-    : (status === 'rejected' ? 'Recommendation Rejected by Officer' : 'Pending Officer Authorization');
-  let authSub = status === 'approved'
-    ? `Authorized by ${esc(approval.officerName || DEFAULT_OFFICER.name)} &bull; ${esc(approval.formattedDate)} &bull; Soil & Water Suitable`
-    : (status === 'rejected' ? `Disapproved by ${esc(approval.officerName || DEFAULT_OFFICER.name)} &bull; Reason: ${esc(approval.remarks)}` : 'Automatic algorithm recommendation awaiting officer verification');
-
   detail.innerHTML = `
-    <div class="crop-auth-banner ${bannerClass}">
-      <div class="auth-banner-left">
-        <span class="auth-seal">${status === 'approved' ? '✓' : (status === 'rejected' ? '✕' : '⏳')}</span>
+    <div class="crop-soil-status-banner ${isVerified ? 'suitable' : 'pending'}">
+      <div class="soil-banner-left">
+        <span class="soil-banner-seal">${isVerified ? '✓' : '⏳'}</span>
         <div>
-          <div class="auth-title">${authTitle}</div>
-          <div class="auth-sub">${authSub}</div>
+          <div class="soil-banner-title">${isVerified ? 'Soil Conditions Suitable' : 'Soil Suitability Verification Pending'}</div>
+          <div class="soil-banner-sub">${isVerified ? 'Verified against Government Soil Health Card standards' : 'Compare with your Government Soil Health Card to verify field suitability'}</div>
         </div>
       </div>
-      <button class="btn-view-certificate" id="btnDetailOpenCert">${status === 'approved' ? 'View Officer Certificate' : 'Officer Review'}</button>
+      <button class="btn-soil-view-guide" id="btnDetailOpenSoilCheck">${isVerified ? 'Review Soil Parameters' : 'Check Soil Suitability'}</button>
     </div>
 
     <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:12px;">
@@ -1937,9 +1852,9 @@ function renderCropDetail(name) {
     ${makeList('Optimal Sowing Months (Tamil Nadu Calendar)', d.Months)}
   `;
 
-  const btnOpenCert = $('btnDetailOpenCert');
-  if (btnOpenCert) {
-    btnOpenCert.addEventListener('click', () => openCropApprovalModal(name));
+  const btnOpenSoilCheck = $('btnDetailOpenSoilCheck');
+  if (btnOpenSoilCheck) {
+    btnOpenSoilCheck.addEventListener('click', () => openSoilSuitabilityModal(name));
   }
 }
 
@@ -4075,7 +3990,7 @@ function renderCompactWeatherUI(json) {
 
 
 // ============================================================
-// BUTTON WIRING & OFFICER PORTAL EVENT LISTENERS
+// BUTTON WIRING & SOIL SUITABILITY MODAL EVENT LISTENERS
 // ============================================================
 
 const connectBtn    = $('connectButton');
@@ -4084,130 +3999,23 @@ const disconnectBtn = $('disconnectButton');
 if (connectBtn)    connectBtn.addEventListener('click', connectBLE);
 if (disconnectBtn) disconnectBtn.addEventListener('click', disconnectBLE);
 
-// Officer Portal Modal Wiring
-const btnOpenOfficerPortal = $('btnOpenOfficerPortal');
-if (btnOpenOfficerPortal) {
-  btnOpenOfficerPortal.addEventListener('click', openOfficerDashboardModal);
-}
-const btnClosePortalModal = $('btnClosePortalModal');
-if (btnClosePortalModal) {
-  btnClosePortalModal.addEventListener('click', closeOfficerDashboardModal);
-}
-const btnCloseCertModal = $('btnCloseCertModal');
-if (btnCloseCertModal) {
-  btnCloseCertModal.addEventListener('click', closeCropApprovalModal);
+// Soil Suitability Modal Wiring
+const btnCloseSoilModal = $('btnCloseSoilModal');
+if (btnCloseSoilModal) {
+  btnCloseSoilModal.addEventListener('click', closeSoilSuitabilityModal);
 }
 
 // Close modals when clicking backdrop overlay
 window.addEventListener('click', (e) => {
-  if (e.target === $('cropApprovalModal')) closeCropApprovalModal();
-  if (e.target === $('officerDashboardModal')) closeOfficerDashboardModal();
+  if (e.target === $('soilSuitabilityModal')) closeSoilSuitabilityModal();
 });
 
-// Close modals with Escape key & Keyboard Navigation for Web Browser
 window.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') {
-    closeCropApprovalModal();
-    closeOfficerDashboardModal();
-    return;
-  }
-
-  // If typing in input, textarea, or select, do not intercept
-  const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
-  if (tag === 'input' || tag === 'textarea' || tag === 'select' || (e.target && e.target.isContentEditable)) {
-    return;
-  }
-
-  const k = e.key ? e.key.toLowerCase() : '';
-  if (k === '1' || k === 'o') {
-    switchTab('tab-overview');
-  } else if (k === '2') {
-    switchTab('tab-about');
-  } else if (k === '3' || k === 'l') {
-    switchTab('tab-live');
-  } else if (k === '4' || k === 'c') {
-    // 4 or C -> Crop Library
-    switchTab('tab-crops');
-  } else if (k === '5' || k === 'p') {
-    // 5 or P -> Farmer Problems
-    switchTab('tab-problems');
-  } else if (k === '6' || k === 's') {
-    // 6 or S -> Seed Calculator
-    switchTab('tab-calculator');
-  } else if (k === '7' || k === 'n') {
-    // 7 or N -> Nutrient Care
-    switchTab('tab-nutrients');
-  } else if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
-    const tabs = ['tab-overview', 'tab-about', 'tab-live', 'tab-crops', 'tab-problems', 'tab-calculator', 'tab-nutrients'];
-    const activeBtn = document.querySelector('.tab-button.active');
-    const curTab = activeBtn ? activeBtn.dataset.tab : tabs[0];
-    let idx = tabs.indexOf(curTab);
-    if (idx === -1) idx = 0;
-    if (e.key === 'ArrowRight') {
-      idx = (idx + 1) % tabs.length;
-    } else {
-      idx = (idx - 1 + tabs.length) % tabs.length;
-    }
-    switchTab(tabs[idx]);
-  }
+  if (e.key === 'Escape') closeSoilSuitabilityModal();
 });
 
-// Officer Portal Filter Tabs Wiring
-$$('#officerDashboardModal [data-portal-filter]').forEach(btn => {
-  btn.addEventListener('click', () => {
-    $$('#officerDashboardModal [data-portal-filter]').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    portalCurrentFilter = btn.dataset.portalFilter;
-    renderOfficerPortalList();
-  });
-});
-
-// Batch Approve All Recommended Crops Button
-const btnApproveAllRec = $('btnApproveAllRec');
-if (btnApproveAllRec) {
-  btnApproveAllRec.addEventListener('click', () => {
-    const offName = ($('inputOfficerName') ? $('inputOfficerName').value.trim() : DEFAULT_OFFICER.name) || DEFAULT_OFFICER.name;
-    pondTelemetry.recCrops.forEach(name => {
-      setCropApproval(name, 'approved', `Batch authorized by ${offName}. Suitable for current field soil & seasonal water availability.`);
-    });
-  });
-}
-
-// Reset Approvals to Default Seed
-const btnResetApprovals = $('btnResetApprovals');
-if (btnResetApprovals) {
-  btnResetApprovals.addEventListener('click', () => {
-    if (confirm('Reset all officer approvals back to initial factory demo state?')) {
-      saveCropApprovals(INITIAL_APPROVALS_SEED);
-      buildCropLibrary();
-      if (selectedCrop) renderCropDetail(selectedCrop);
-      updatePondTelemetryUI();
-      renderOfficerPortalList();
-    }
-  });
-}
-
-// ============================================================
-// UTILITY
-// ============================================================
-
-function esc(v) {
-  return String(v ?? '').replace(/[&<>"']/g, c => ({
-    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-  }[c]));
-}
-
-// ============================================================
-// INITIALISE
-// ============================================================
-
-updatePondTelemetryUI();
-buildCropLibrary();
-buildProblems();
-setupCalculator();
-buildNutrientCare();
-initLiveWeather();
-updateApprovalCounters();
+// Update modal close in keydown Escape
+// (handled in keydown listener)
 setStatus('idle');
 
 if (!navigator.bluetooth) {
@@ -4224,10 +4032,8 @@ try {
     switchTab(hash);
   }
   const modalParam = urlParams.get('modal');
-  if (modalParam === 'cert') {
+  if (modalParam === 'soil') {
     const cropParam = urlParams.get('crop') || 'Paddy';
-    openCropApprovalModal(cropParam);
-  } else if (modalParam === 'portal') {
-    openOfficerDashboardModal();
+    openSoilSuitabilityModal(cropParam);
   }
 } catch (e) {}
