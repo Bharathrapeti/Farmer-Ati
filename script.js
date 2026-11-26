@@ -2549,11 +2549,12 @@ function updateCalculatorCropList() {
   sel.innerHTML = '<option value="" disabled>Select crop…</option>';
 
   const allNames = Object.keys(CALC_CONFIG);
+  const recList = pondTelemetry.recCrops || [];
 
-  if (pondTelemetry.recCrops.length > 0) {
+  if (recList.length > 0) {
     const optGroupRec = document.createElement('optgroup');
     optGroupRec.label = '🌱 Eligible Crops for Selected Pond Mode';
-    pondTelemetry.recCrops.forEach(name => {
+    recList.forEach(name => {
       if (CALC_CONFIG[name]) {
         const opt = document.createElement('option');
         opt.value = name;
@@ -2566,20 +2567,24 @@ function updateCalculatorCropList() {
     }
   }
 
-  const optGroupAll = document.createElement('optgroup');
-  optGroupAll.label = `All Supported Crops (${allNames.length})`;
-  allNames.forEach(name => {
-    const opt = document.createElement('option');
-    opt.value = name;
-    opt.textContent = `${getCropIcon(name)} ${name}`;
-    optGroupAll.appendChild(opt);
-  });
-  sel.appendChild(optGroupAll);
+  // Other supported crops (avoid duplicating options so tablet pickers work smoothly)
+  const otherNames = allNames.filter(name => !recList.includes(name));
+  if (otherNames.length > 0) {
+    const optGroupOther = document.createElement('optgroup');
+    optGroupOther.label = `🌾 Other Supported Crops (${otherNames.length})`;
+    otherNames.forEach(name => {
+      const opt = document.createElement('option');
+      opt.value = name;
+      opt.textContent = `${getCropIcon(name)} ${name}`;
+      optGroupOther.appendChild(opt);
+    });
+    sel.appendChild(optGroupOther);
+  }
 
   if (currentVal && allNames.includes(currentVal)) {
     sel.value = currentVal;
-  } else if (pondTelemetry.recCrops.length > 0 && CALC_CONFIG[pondTelemetry.recCrops[0]]) {
-    sel.value = pondTelemetry.recCrops[0];
+  } else if (recList.length > 0 && CALC_CONFIG[recList[0]]) {
+    sel.value = recList[0];
   } else {
     sel.value = 'Paddy';
   }
@@ -2690,23 +2695,38 @@ function calculateSeedRequirement() {
   const areaInput = $('calcArea');
   const customRateInput = $('calcCustomRate');
 
-  if (!selCrop || !calcResult || !areaInput) return;
+  if (!calcResult) return;
 
-  const crop = selCrop.value;
+  // Robust crop resolution with tablet/mobile fallback
+  let crop = (selCrop && selCrop.value) ? selCrop.value.trim() : '';
+  if (!crop || !CALC_CONFIG[crop]) {
+    crop = (typeof selectedCrop !== 'undefined' && selectedCrop && CALC_CONFIG[selectedCrop])
+      ? selectedCrop
+      : ((pondTelemetry.recCrops && pondTelemetry.recCrops[0] && CALC_CONFIG[pondTelemetry.recCrops[0]]) ? pondTelemetry.recCrops[0] : 'Paddy');
+    if (selCrop) selCrop.value = crop;
+  }
+
   const cfg = CALC_CONFIG[crop];
   if (!cfg) {
-    calcResult.innerHTML = '<div class="calc-error">⚠ Please select a valid crop.</div>';
+    calcResult.innerHTML = '<div class="calc-error">⚠ Please select a valid crop from the dropdown.</div>';
     return;
   }
 
-  const area = parseFloat(areaInput.value);
+  // Robust area resolution
+  let area = areaInput ? parseFloat(areaInput.value) : 1.0;
   if (isNaN(area) || area <= 0) {
-    calcResult.innerHTML = '<div class="calc-error">⚠ Please enter a valid field area greater than 0 (e.g. 0.5, 1.0, 2.0).</div>';
-    return;
+    area = 1.0;
+    if (areaInput) areaInput.value = '1.0';
   }
 
-  const methodKey = (selMethod && selMethod.value) ? selMethod.value : cfg.defaultMethod;
-  const m = cfg.methods[methodKey] || cfg.methods[cfg.defaultMethod];
+  const defaultMethodKey = cfg.defaultMethod || Object.keys(cfg.methods)[0];
+  const methodKey = (selMethod && selMethod.value && cfg.methods[selMethod.value]) ? selMethod.value : defaultMethodKey;
+  const m = cfg.methods[methodKey] || cfg.methods[defaultMethodKey] || Object.values(cfg.methods)[0];
+
+  if (!m) {
+    calcResult.innerHTML = '<div class="calc-error">⚠ Standard cultivation method details are currently unavailable for this crop.</div>';
+    return;
+  }
 
   // Rate: Use custom rate if user actively modified it and valid, else use standard rate
   let activeRate = m.rate;
@@ -2727,7 +2747,7 @@ function calculateSeedRequirement() {
     formulaCalculationText = `${area} Acre × ${activeRate.toLocaleString()} / acre = ${totalNumeric.toLocaleString()} ${m.unit} (rounded to whole integer)`;
   } else if (m.isGrams) {
     // Nursery seeds in grams
-    totalNumeric = area * (activeRate * 1000); // grams
+    totalNumeric = area * (activeRate * 1000);
     if (totalNumeric >= 1000) {
       formattedTotal = (totalNumeric / 1000).toFixed(2);
       unitText = 'kg seeds (' + Math.round(totalNumeric).toLocaleString() + ' g)';
@@ -2754,9 +2774,9 @@ function calculateSeedRequirement() {
     requirementCategoryName = m.isGrams ? 'NURSERY SEED' : 'SEEDLING';
   }
 
-  // Preserve Farm Pond Telemetry integration & water demand calculation
+  // Farm Pond Telemetry integration & water demand calculation
   let waterInfoHtml = '';
-  const cropData = CROPS[crop];
+  const cropData = (typeof CROPS !== 'undefined' && CROPS) ? CROPS[crop] : null;
   if (cropData && cropData.WaterReq_L) {
     const cropLitres = cropData.WaterReq_L * area;
     const cropM3 = (cropLitres / 1000).toFixed(0);
@@ -2781,7 +2801,7 @@ function calculateSeedRequirement() {
     `;
   }
 
-  const areaSqMetres = (area * 4046.86).toLocaleString(undefined, { maximumFractionDigits: 1 });
+  const areaSqMetres = Math.round(area * 4046.86).toLocaleString();
   const areaSqFeet = Math.round(area * 43560).toLocaleString();
 
   calcResult.innerHTML = `
@@ -2859,16 +2879,19 @@ function setupCalculator() {
     });
   }
 
-  // 3. Quick Area Preset Chips
+  // 3. Quick Area Preset Chips (handle click & touch)
   if (areaChips.length > 0) {
     areaChips.forEach(chip => {
-      chip.addEventListener('click', () => {
+      const handleChipSelect = (e) => {
+        if (e && e.type === 'touchend') e.preventDefault();
         areaChips.forEach(c => c.classList.remove('active'));
         chip.classList.add('active');
         if (areaInput) {
           areaInput.value = chip.dataset.area;
         }
-      });
+      };
+      chip.addEventListener('click', handleChipSelect);
+      chip.addEventListener('touchend', handleChipSelect);
     });
   }
 
@@ -2882,14 +2905,29 @@ function setupCalculator() {
     });
   }
 
-  // 5. Compute Button Click - ONLY WHEN USER CLICKS THIS BUTTON
-  calcBtn.addEventListener('click', () => {
+  // 5. Compute Button Click & Touchend - Fully responsive on Tablet / Touchscreen
+  let lastComputeTime = 0;
+  const handleCompute = (e) => {
+    const now = Date.now();
+    if (now - lastComputeTime < 300) return; // Prevent double trigger from touchend + click
+    lastComputeTime = now;
+
+    if (e && e.type === 'touchend') {
+      e.preventDefault();
+    }
+
     calculateSeedRequirement();
+
     const resultEl = $('calcResult');
     if (resultEl) {
-      resultEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      setTimeout(() => {
+        resultEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 60);
     }
-  });
+  };
+
+  calcBtn.addEventListener('click', handleCompute);
+  calcBtn.addEventListener('touchend', handleCompute);
 
   // Initialize dropdowns without calculating down data
   updateCalculatorCropList();
