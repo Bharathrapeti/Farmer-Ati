@@ -3043,10 +3043,61 @@ function renderLiveScreen(data) {
   // Update Telemetry UI
   updatePondTelemetryUI(data);
 
-  // Keep track of screen name change without navigating away from the current tab
+  // ════════════════════════════════════════════════════════
+  // AUTOMATIC OLED -> WEBSITE TAB SYNCHRONIZATION
+  // Re-applied: Keypad navigation on ESP32 updates website
+  // ════════════════════════════════════════════════════════
   const sUpper = screen.toUpperCase();
-  if (sUpper !== lastScreenName) {
-    lastScreenName = sUpper;
+  const selectedLine = (lines.find(l => l.trim().startsWith('>')) || '').toUpperCase();
+  const navSignature = `${sUpper}|${selectedLine}|${activeCrop}`;
+
+  if (navSignature !== lastScreenName) {
+    lastScreenName = navSignature;
+
+    if (
+      sUpper.includes('CROP LIBRARY') ||
+      sUpper.includes('SUITABLE') ||
+      selectedLine.includes('CROP LIBRARY') ||
+      (sUpper.includes('MAIN MENU') && selectedLine.includes('CROP'))
+    ) {
+      switchTab('tab-crops');
+    } else if (
+      sUpper.includes('FARMER PROBLEMS') ||
+      sUpper.includes('PROBLEMS') ||
+      selectedLine.includes('FARMER PROBLEMS') ||
+      selectedLine.includes('PROBLEMS') ||
+      (sUpper.includes('MAIN MENU') && selectedLine.includes('PROBLEM'))
+    ) {
+      switchTab('tab-problems');
+    } else if (
+      sUpper.includes('POND LEVEL') ||
+      selectedLine.includes('POND LEVEL') ||
+      (sUpper.includes('MAIN MENU') && selectedLine.includes('POND'))
+    ) {
+      switchTab('tab-overview');
+    } else if (
+      sUpper.includes('CALCULATOR') ||
+      sUpper.includes('SEED CALC') ||
+      selectedLine.includes('CALCULATOR')
+    ) {
+      switchTab('tab-calculator');
+    } else if (
+      sUpper.includes('NUTRIENT') ||
+      selectedLine.includes('NUTRIENT')
+    ) {
+      switchTab('tab-nutrients');
+    } else if (
+      sUpper.includes('ABOUT') ||
+      selectedLine.includes('ABOUT')
+    ) {
+      switchTab('tab-about');
+    }
+
+    // If OLED opened a specific crop guide, automatically select it on website
+    if (activeCrop && CROPS[activeCrop]) {
+      switchTab('tab-crops');
+      selectCrop(activeCrop);
+    }
   }
 
   frameCount++;
@@ -4053,11 +4104,51 @@ window.addEventListener('click', (e) => {
   if (e.target === $('officerDashboardModal')) closeOfficerDashboardModal();
 });
 
-// Close modals with Escape key
+// Close modals with Escape key & Keyboard Navigation for Web Browser
 window.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     closeCropApprovalModal();
     closeOfficerDashboardModal();
+    return;
+  }
+
+  // If typing in input, textarea, or select, do not intercept
+  const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
+  if (tag === 'input' || tag === 'textarea' || tag === 'select' || (e.target && e.target.isContentEditable)) {
+    return;
+  }
+
+  const k = e.key ? e.key.toLowerCase() : '';
+  if (k === '1' || k === 'o') {
+    switchTab('tab-overview');
+  } else if (k === '2') {
+    switchTab('tab-about');
+  } else if (k === '3' || k === 'l') {
+    switchTab('tab-live');
+  } else if (k === '4' || k === 'c') {
+    // 4 or C -> Crop Library
+    switchTab('tab-crops');
+  } else if (k === '5' || k === 'p') {
+    // 5 or P -> Farmer Problems
+    switchTab('tab-problems');
+  } else if (k === '6' || k === 's') {
+    // 6 or S -> Seed Calculator
+    switchTab('tab-calculator');
+  } else if (k === '7' || k === 'n') {
+    // 7 or N -> Nutrient Care
+    switchTab('tab-nutrients');
+  } else if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+    const tabs = ['tab-overview', 'tab-about', 'tab-live', 'tab-crops', 'tab-problems', 'tab-calculator', 'tab-nutrients'];
+    const activeBtn = document.querySelector('.tab-button.active');
+    const curTab = activeBtn ? activeBtn.dataset.tab : tabs[0];
+    let idx = tabs.indexOf(curTab);
+    if (idx === -1) idx = 0;
+    if (e.key === 'ArrowRight') {
+      idx = (idx + 1) % tabs.length;
+    } else {
+      idx = (idx - 1 + tabs.length) % tabs.length;
+    }
+    switchTab(tabs[idx]);
   }
 });
 
